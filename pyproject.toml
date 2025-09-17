@@ -1,7 +1,7 @@
 [project]
 name = "ginseng"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "Efficient and accurate annotation for single-cell sequencing data"
 readme = "README.md"
 authors = [
     { name = "Tom Ouellette", email = "touellette112@gmail.com" }
@@ -16,10 +16,6 @@ dependencies = [
     "tqdm>=4.67.1",
 ]
 
-# [project.optional-dependencies]
-# tests = [
-#     "pytest",
-# ]
 [tool.setuptools]
 exclude-package-data = { "" = ["src/tests/data/*"] }
 
