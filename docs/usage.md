@@ -178,7 +178,6 @@ GinsengAnnotate(
     model_state,
     adata, # Or path to 10x matrix market data, .h5 file, or .h5ad file
     gene_key="gene_symbol",
-    backed=True,
     batch_size=256,
 )
 
