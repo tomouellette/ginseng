@@ -135,6 +135,35 @@ class GinsengLogger:
         self.holdout_loss.append(holdout_loss)
         self.holdout_accuracy.append(holdout_accuracy)
 
+    def report(self, silent: bool = False, flush: bool = True) -> None:
+        """Print most recent result to standard output.
+
+        Parameters
+        ----------
+        silent : bool
+            If True, suppresses report output.
+        flush : bool
+            If True, write report to output immediately.
+
+        Returns
+        -------
+        None
+            Output is printed to standard output.
+        """
+        has_train = len(self.train_loss) > 0
+        has_holdout = len(self.holdout_loss) > 0
+
+        msg = f"[ginseng] Epoch {self.epoch} report | "
+        if has_train:
+            msg += f" Training loss: {self.train_loss[-1]:.3e} | "
+
+        if has_holdout:
+            msg += f"Holdout loss: {self.holdout_loss[-1]:.3e} | "
+            msg += f"Holdout accuracy: {self.holdout_accuracy[-1]:.3e} |"
+
+        if has_train or has_holdout:
+            print(msg, flush=flush)
+
 
 @dataclass
 class GinsengModelState:
@@ -321,6 +350,8 @@ def GinsengTrainer(
             holdout_loss=np.mean(holdout_losses).item(),
             holdout_accuracy=accuracy,
         )
+
+        logger.report(silent=silent)
 
     model_state = GinsengModelState(
         params,
