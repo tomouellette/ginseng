@@ -1,6 +1,14 @@
 # Usage
 
-## Preparing datasets for training
+- [`data`](#data)
+  - [Preparing a `GinsengDataset`](#preparing-a-ginsengdataset)
+  - [Working with a `GinsengDataset`](#working-with-a-ginsengdataset)
+- [`train`](#train)
+  - [Training a model with `GinsengTrainer`](#training-a-model-with-ginsengtrainer)
+
+## `data`
+
+### Preparing a `GinsengDataset`
 
 `ginseng` uses `zarr` stores for efficient storage and retrieval of single-cell count data.
 This makes it easy to cache, split, and iterate over data for training models.
@@ -46,7 +54,7 @@ GinsengDataset.create(
 )
 ```
 
-## Working with datasets
+### Preparing a `GinsengDataset`
 
 Once a dataset has been created, it can be reloaded at any time. `GinsengDataset` supports flexible batching, optional label balancing, and automatic train/holdout splits.
 
@@ -89,4 +97,51 @@ dataset.make_holdout(holdout_fraction=0.2, group_level=True)
 
 # If `groups` were provided, leave only one group out in the holdout
 dataset.make_holdout(holdout_fraction=0.2, group_level=True, group_mode="loo")
+```
+
+## `train`
+
+### Training a model with `GinsengTrainer`
+
+```python
+from ginseng.train import GinsengTrainerSettings, GinsengTrainer
+
+# Specify a variety of training settings if desired
+settings = GinsengTrainerSettings(
+	# Augmentation
+	rate=0.1,
+    lam_max=0.05,
+    lower=0,
+    upper=20,
+
+    # Model
+    hidden_dim=256,
+    dropout_rate=0.25,
+
+    # Optimization
+    batch_size=128,
+    lr=0.001,
+    betas=(0.9, 0.999),
+    eps=1e-8,
+    weight_decay=0.01,
+
+    # Data
+    normalize=True,
+    target_sum=1e4,
+    holdout_fraction=0.2,
+    balance_train=True,
+    group_level=False,
+    group_mode="fraction",
+
+    # Randomness
+    seed=1
+)
+
+# Train a model
+logger, model_state = GinsengTrainer(
+	dataset,
+	settings,
+	epochs=10,
+	silent=False
+)
 ```
