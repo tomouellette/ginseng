@@ -1,6 +1,6 @@
 [project]
 name = "ginseng"
-version = "0.1.1"
+version = "0.1.2"
 description = "Efficient and accurate annotation for single-cell sequencing data"
 readme = "README.md"
 authors = [
