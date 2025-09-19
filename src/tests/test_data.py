@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from anndata import AnnData
+from scipy import sparse
 
 from ginseng.data import GinsengDataset
 
@@ -52,10 +53,30 @@ def test_create_dense_groups(tmp_path, adata):
 
 
 def test_create_sparse(tmp_path, adata):
+    adata.X = sparse.csr_matrix(adata.X)
     dataset = GinsengDataset.create(tmp_path / "sparse_test", adata, "cell_type")
 
     assert dataset.n_cells == 6
     assert dataset.n_genes == 100
+    assert dataset.n_labels == 2
+    assert len(dataset.label_indices) == 2
+    assert np.all(np.unique(dataset.labels) == [0, 1])
+
+
+def test_create_gene_mask(tmp_path, adata):
+    adata.X = sparse.csr_matrix(adata.X)
+    mask = np.zeros(adata.shape[1], dtype=bool)
+    mask[:20] = True
+
+    dataset = GinsengDataset.create(
+        tmp_path / "sparse_test",
+        adata,
+        "cell_type",
+        gene_mask=mask,
+    )
+
+    assert dataset.n_cells == 6
+    assert dataset.n_genes == 20
     assert dataset.n_labels == 2
     assert len(dataset.label_indices) == 2
     assert np.all(np.unique(dataset.labels) == [0, 1])

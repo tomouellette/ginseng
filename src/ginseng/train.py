@@ -294,6 +294,7 @@ def GinsengTrainer(
             desc=f"[ginseng] Train {epoch+1}/{epochs}",
             unit="step",
             disable=silent,
+            total=dataset.n_batches,
         ) as progress:
             for step, (x, y) in enumerate(progress):
                 key, subkey = jax.random.split(key)
@@ -328,6 +329,7 @@ def GinsengTrainer(
             desc=f"[ginseng] Holdout {epoch+1}/{epochs}",
             unit="step",
             disable=silent,
+            total=dataset.n_batches,
         ) as progress:
             for step, (x, y) in enumerate(progress):
                 key, subkey = jax.random.split(key)

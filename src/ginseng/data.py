@@ -184,8 +184,10 @@ class GinsengDataset:
         root = zarr.open_group(store=store, mode="w")
 
         n_genes = adata.X.shape[1]
-        if column_mask is not None and not adata.isbacked:
-            adata = adata[:, column_mask]
+        if column_mask is not None:
+            if not adata.isbacked:
+                adata = adata[:, column_mask]
+
             n_genes = int(column_mask.sum())
 
         zX = zarr.create_array(
@@ -256,7 +258,7 @@ class GinsengDataset:
         root.attrs.update(
             {
                 "n_cells": adata.X.shape[0],
-                "n_genes": adata.X.shape[1],
+                "n_genes": n_genes,
                 "n_labels": len(unique_labels),
                 "dtype": str(adata.X.dtype),
                 "label_keys": [
@@ -470,7 +472,6 @@ class GinsengDataset:
                 )
 
             for label, indices in self.label_indices.items():
-                n_holdout = max(1, int(len(indices) * holdout_fraction))
                 permuted = rng.permutation(indices)
                 holdout_indices.append(permuted[:n_holdout])
                 train_indices.append(permuted[n_holdout:])
@@ -569,17 +570,22 @@ class GinsengDataset:
         if shuffle and rng is not None:
             indices = rng.permutation(indices)
 
-        n_batches = (len(indices) + batch_size - 1) // batch_size
+        self.n_batches = (len(indices) + batch_size - 1) // batch_size
 
-        for i in range(n_batches):
-            start_idx = i * batch_size
-            end_idx = min(start_idx + batch_size, len(indices))
-            batch_indices = indices[start_idx:end_idx]
+        # Note: We return the generator as a function to allow storing batch related
+        # statistics such as `n_batches` (e.g. used for setting progress bar lengths)
+        def _generator():
+            for i in range(self.n_batches):
+                start_idx = i * batch_size
+                end_idx = min(start_idx + batch_size, len(indices))
+                batch_indices = indices[start_idx:end_idx]
 
-            X_batch = self.get_batch(batch_indices)
-            y_batch = self.labels[batch_indices]
+                X_batch = self.get_batch(batch_indices)
+                y_batch = self.labels[batch_indices]
 
-            yield X_batch, y_batch
+                yield X_batch, y_batch
+
+        return _generator()
 
     def __len__(self, split: str = "all"):
         """Return the number of samples in the dataset.
