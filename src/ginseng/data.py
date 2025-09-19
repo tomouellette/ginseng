@@ -144,7 +144,7 @@ class GinsengDataset:
     def _create_from_sparse(
         cls,
         path: str | Path,
-        X: sparse.spmatrix,
+        adata: AnnData,
         labels: np.ndarray,
         chunk_size: tuple[int, int] | None = None,
         groups: np.ndarray | None = None,
@@ -157,8 +157,8 @@ class GinsengDataset:
         ----------
         path : str | Path
             Path to store the new dataset.
-        X : scipy.sparse.spmatrix
-            Sparse count matrix.
+        adata : AnnData
+            AnnData object.
         labels : np.ndarray
             Array of labels for each barcode.
         chunk_size : tuple[int, int]
@@ -183,25 +183,37 @@ class GinsengDataset:
         store = LocalStore(path)
         root = zarr.open_group(store=store, mode="w")
 
-        n_genes = X.shape[1]
-        if column_mask is not None:
-            X = X[:, column_mask]
+        n_genes = adata.X.shape[1]
+        if column_mask is not None and not adata.isbacked:
+            adata = adata[:, column_mask]
             n_genes = int(column_mask.sum())
 
         zX = zarr.create_array(
             store=store,
             name="X",
-            shape=(X.shape[0], n_genes),
+            shape=(adata.X.shape[0], n_genes),
             dtype=np.float32,
             chunks=chunk_size,
         )
 
         block_size = chunk_size[0]
+        n_rows = adata.n_obs
+
         for start in tqdm(
-            range(0, X.shape[0], block_size), desc="[ginseng] Constructing dataset"
+            range(0, n_rows, block_size), desc="[ginseng] Constructing dataset"
         ):
-            end = min(start + block_size, X.shape[0])
-            zX[start:end, :] = X[start:end].toarray().astype(np.float32)
+            end = min(start + block_size, n_rows)
+
+            batch = adata.X[start:end]
+
+            if adata.isbacked and column_mask is not None:
+                batch = batch[:, column_mask]
+
+            if hasattr(batch, "toarray"):
+                batch = batch.toarray()
+
+            batch = batch.astype(np.float32)
+            zX[start:end, :] = batch
 
         unique_labels = np.unique(labels)
         label_map = {k: v for k, v in zip(unique_labels, range(len(unique_labels)))}
@@ -243,10 +255,10 @@ class GinsengDataset:
 
         root.attrs.update(
             {
-                "n_cells": X.shape[0],
-                "n_genes": X.shape[1],
+                "n_cells": adata.X.shape[0],
+                "n_genes": adata.X.shape[1],
                 "n_labels": len(unique_labels),
-                "dtype": str(X.dtype),
+                "dtype": str(adata.X.dtype),
                 "label_keys": [
                     str(k) if isinstance(k, str) else int(k) for k in label_map.keys()
                 ],
@@ -341,7 +353,7 @@ class GinsengDataset:
             adata.X, anndata._core.sparse_dataset._CSRDataset
         ):
             return cls._create_from_sparse(
-                path, adata.X, labels, chunk_size, groups, genes, gene_mask
+                path, adata, labels, chunk_size, groups, genes, gene_mask
             )
         elif isinstance(adata.X, np.ndarray):
             return cls._create_from_numpy(

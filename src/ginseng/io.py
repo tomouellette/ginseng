@@ -218,6 +218,7 @@ def save_ginseng_state(state: GinsengModelState, filename: str | Path):
         # Save scalar metadata
         f.attrs["normalize"] = state.normalize
         f.attrs["target_sum"] = state.target_sum
+        f.attrs["dropout_rate"] = state.dropout_rate
         f.attrs["training"] = state.training
 
         # Flatten PyTree and save each array with numeric index
@@ -260,6 +261,7 @@ def load_ginseng_state(filename: str | Path) -> GinsengModelState:
         # Load metadata
         normalize = bool(f.attrs["normalize"])
         target_sum = float(f.attrs["target_sum"])
+        dropout_rate = float(f.attrs["dropout_rate"])
         training = bool(f.attrs["training"])
 
         # Load parameters
@@ -283,5 +285,6 @@ def load_ginseng_state(filename: str | Path) -> GinsengModelState:
             label_values=label_values,
             normalize=normalize,
             target_sum=target_sum,
+            dropout_rate=dropout_rate,
             training=training,
         )

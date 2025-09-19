@@ -153,7 +153,7 @@ class GinsengLogger:
         has_train = len(self.train_loss) > 0
         has_holdout = len(self.holdout_loss) > 0
 
-        msg = f"[ginseng] Epoch {self.epoch+1} report | "
+        msg = f"[ginseng] Epoch {self.epoch[-1]+1} report | "
         if has_train:
             msg += f" Training loss: {self.train_loss[-1]:.3e} | "
 
@@ -183,6 +183,8 @@ class GinsengModelState:
         If True, model was trained on normalized data
     target_sum : float
         Target sum used for normalization.
+    dropout_rate : float
+        Dropout probability applied during training.
     training : bool
         If True, model weighted should not be frozen.
     """
@@ -193,6 +195,7 @@ class GinsengModelState:
     label_values: np.ndarray
     normalize: bool
     target_sum: float
+    dropout_rate: float
     training: bool = False
 
 
@@ -360,6 +363,7 @@ def GinsengTrainer(
         label_values=dataset.root.attrs["label_values"][:],
         normalize=settings.normalize,
         target_sum=settings.target_sum,
+        dropout_rate=settings.dropout_rate,
         training=False,
     )
 

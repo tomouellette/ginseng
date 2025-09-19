@@ -1,71 +1,11 @@
 # Copyright (c) 2025, Tom Ouellette
 # Licensed under the MIT License
 
-import jax.numpy as jnp
 import numpy as np
 
 from anndata import AnnData
 from scipy import sparse
 from tqdm import tqdm
-
-
-def iter_sequential(
-    adata: AnnData,
-    label_key: str,
-    batch_size: int = 256,
-    gene_order: None | list | np.ndarray = None,
-    gene_mask: None | np.ndarray = None,
-) -> tuple[jnp.ndarray, jnp.ndarray, np.ndarray]:
-    """Iterate sequentially through an AnnData for prediction.
-
-    Parameters
-    ----------
-    adata : AnnData
-        AnnData object with `obs[label_key]`.
-    label_key : str
-        Column in AnnData `obs` with integer or string cell type labels.
-    batch_size : int
-        Number of cells per batch.
-    gene_order : None | list | np.ndarray
-        Columns ordered by name (e.g as in training). Missing values filled with zero.
-    gene_mask : np.ndarray
-        Only include columns set to True in the mask. Cannot be set if `gene_order` is provided.
-    """
-    n_cells = adata.n_obs
-
-    if gene_order is not None and gene_mask is not None:
-        raise ValueError("Only one of gene_order or gene_mask can be provided")
-
-    if gene_order is not None:
-        gene_idx_map = np.array(
-            [
-                adata.var_names.get_loc(g) if g in adata.var_names else -1
-                for g in gene_order
-            ],
-            dtype=int,
-        )
-        column_indices = gene_idx_map[gene_idx_map >= 0]
-    elif gene_mask is not None:
-        column_indices = np.flatnonzero(gene_mask)
-    else:
-        column_indices = np.arange(adata.n_vars)
-
-    labels = adata.obs[label_key].to_numpy()
-    n_batches = (n_cells + batch_size - 1) // batch_size
-
-    for i in range(n_batches):
-        start = i * batch_size
-        end = min(start + batch_size, n_cells)
-        batch_idx = np.arange(start, end)
-
-        X_batch = adata.X[batch_idx, :][:, column_indices]
-        if sparse.issparse(X_batch):
-            X_batch = X_batch.toarray()
-
-        X_batch = jnp.asarray(X_batch)
-        y_batch = jnp.asarray(labels[batch_idx])
-
-        yield X_batch, y_batch, batch_idx
 
 
 def compute_hvgs(
