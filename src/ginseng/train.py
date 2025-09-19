@@ -153,7 +153,7 @@ class GinsengLogger:
         has_train = len(self.train_loss) > 0
         has_holdout = len(self.holdout_loss) > 0
 
-        msg = f"[ginseng] Epoch {self.epoch} report | "
+        msg = f"[ginseng] Epoch {self.epoch+1} report | "
         if has_train:
             msg += f" Training loss: {self.train_loss[-1]:.3e} | "
 
