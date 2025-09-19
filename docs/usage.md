@@ -54,7 +54,7 @@ GinsengDataset.create(
 )
 ```
 
-### Preparing a `GinsengDataset`
+### Working with a `GinsengDataset`
 
 Once a dataset has been created, it can be reloaded at any time. `GinsengDataset` supports flexible batching, optional label balancing, and automatic train/holdout splits.
 
