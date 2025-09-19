@@ -2,6 +2,10 @@
 
 ## Table of Contents
 
+- [annotate](#annotate)
+  - [annotate_iter_full](#function-annotate_iter_full)
+  - [annotate_iter_partial](#function-annotate_iter_partial)
+  - [annotate](#function-annotate)
 - [augment](#augment)
   - [augment_mask](#function-augment_mask)
   - [augment_background](#function-augment_background)
@@ -44,11 +48,55 @@
   - [GinsengTrainerSettings](#class-ginsengtrainersettings)
   - [GinsengLogger](#class-ginsenglogger)
     - [update](#method-update)
+    - [report](#method-report)
   - [GinsengModelState](#class-ginsengmodelstate)
   - [GinsengTrainer](#function-ginsengtrainer)
 - [utils](#utils)
-  - [iter_sequential](#function-iter_sequential)
   - [compute_hvgs](#function-compute_hvgs)
+
+## `annotate`
+
+### Function `annotate_iter_full`
+
+Iterator over AnnData returning jax arrays when all genes are present.
+
+**Parameters:**
+- **adata** (`AnnData`): AnnData object.
+- **gene_names** (`list[str]`): Genes ordered as in training.
+- **gene_key** (`str | None`): Column in .var where gene names are stored.
+- **batch_size** (`int`): Number of cells per batch. Yields ------ jax.numpy.ndarray Array of shape (batch_size, len(gene_names))
+
+### Function `annotate_iter_partial`
+
+Iterator over AnnData when genes are missing which were used during training.
+
+**Parameters:**
+- **adata** (`AnnData`): AnnData object.
+- **gene_names** (`list[str]`): Genes ordered as in training.Missing genes are filled with zeros.
+- **gene_key** (`str | None`): Column in .var where gene names are stored.
+- **batch_size** (`int`): Number of barcodes per batch. Yields ------ jax.numpy.ndarray Array of shape (batch_size, genes)
+
+### Function `annotate`
+
+Annotate single-cell sequencing data using a trained ginseng model.
+
+**Parameters:**
+- **model_state** (`GinsengModelState | str | Path`): Model state containing parameters, genes, labels, and metadata.
+- **adata** (`AnnData | str | Path`): AnnData object or path to count data stored in 10x .h5 format, AnnData .h5ad format, or in a 10x matrix market format folder.
+- **gene_key** (`str | None`): Column in .var where gene names are stored.
+- **backed** (`bool`): If True and adata is a str or Path, then read count data in on-disk/backed mode. When running in backed mode, memory requirements will be lower at cost of longer running times (only relevant for large datasets).
+- **normalize** (`bool`): Override normalize in model_state. This may be useful if you do not have access to raw counts. Be aware that differences in normalization between training and inference will likely change performance.
+- **target_sum** (`bool`): Override target_sum in model_state. As noted in the normalize argument, modifying target_sum will likely change model performance.
+- **randomness** (`bool`): If True, dropout remains active during inference. This enables techniques like Monte Carlo dropout, where repeated stochastic forward passes yield an approximate predictive distribution by sampling subnetworks.
+- **batch_size** (`int`): Annotate data in chunks of size (batch_size). If your dataset is not large and you have sufficient memory, then batch size can be set to total number of rows.
+- **copy** (`bool`): If True, return a copy of the AnnData object else modify in-place.
+- **return_probs** (`bool`): If True, return a table of cell type softmax probabilities for each barcode.
+- **return_attn** (`bool`): If True, return the predicted gene-level weights associated with each barcode. Note that this will be an array of N cells by N genes ( not recommended for large datasets).
+- **return_table** (`bool`): If True, a two column table with columns 'barcode' and 'cell_type' is returned from the function instead.
+- **seed** (`int`): Random seed for reproducibility.
+
+**Returns:**
+- `None | AnnData | pd.DataFrame`: By default, AnnData is modified in place. If copy=True, then an AnnData is returned. If return_table=True, then a data frame with  barcode and cell type info is returned.
 
 ## `augment`
 
@@ -137,7 +185,7 @@ Create cached dataset from a sparse count matrix.
 
 **Parameters:**
 - **path** (`str | Path`): Path to store the new dataset.
-- **X** (`scipy.sparse.spmatrix`): Sparse count matrix.
+- **adata** (`AnnData`): AnnData object.
 - **labels** (`np.ndarray`): Array of labels for each barcode.
 - **chunk_size** (`tuple[int, int]`): Chunk size for storing counts.
 - **groups** (`np.ndarray`): Group-level information used to stratify holdout data. If provided, no unique group will have data in both training and holdout when using `make_holdout`.
@@ -489,6 +537,17 @@ Update the logger with new training and validation metrics.
 - **holdout_loss** (`float`): Validation loss at this epoch.
 - **holdout_accuracy** (`float`): Validation accuracy at this epoch.
 
+#### Method `report`
+
+Print most recent result to standard output.
+
+**Parameters:**
+- **silent** (`bool`): If True, suppresses report output.
+- **flush** (`bool`): If True, write report to output immediately.
+
+**Returns:**
+- `None`: Output is printed to standard output.
+
 ### Class `GinsengModelState`
 
 State of the Ginseng model, including parameters and metadata.
@@ -500,6 +559,7 @@ State of the Ginseng model, including parameters and metadata.
 - **label_values** (`np.ndarray`): Values denoting original string/integer identifiers for each label.
 - **normalize** (`bool`): If True, model was trained on normalized data
 - **target_sum** (`float`): Target sum used for normalization.
+- **dropout_rate** (`float`): Dropout probability applied during training.
 - **training** (`bool`): If True, model weighted should not be frozen.
 
 ### Function `GinsengTrainer`
@@ -516,17 +576,6 @@ Train a neural network classiifier on a `GinsengDataset`.
 - `logger : GinsengLogger`: Training log with loss and accuracy metrics across epochs. state : GinsengModelState Final trained model state including parameters and metadata.
 
 ## `utils`
-
-### Function `iter_sequential`
-
-Iterate sequentially through an AnnData for prediction.
-
-**Parameters:**
-- **adata** (`AnnData`): AnnData object with `obs[label_key]`.
-- **label_key** (`str`): Column in AnnData `obs` with integer or string cell type labels.
-- **batch_size** (`int`): Number of cells per batch.
-- **gene_order** (`None | list | np.ndarray`): Columns ordered by name (e.g as in training). Missing values filled with zero.
-- **gene_mask** (`np.ndarray`): Only include columns set to True in the mask. Cannot be set if `gene_order` is provided.
 
 ### Function `compute_hvgs`
 
