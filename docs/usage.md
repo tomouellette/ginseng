@@ -6,7 +6,7 @@
 - [`train`](#train)
   - [Training a model with `GinsengTrainer`](#training-a-model-with-ginsengtrainer)
   - [Saving and loading a model trained with `GinsengTrainer`](#saving-and-loading-a-model-trained-with-ginsengtrainer)
-- [`annotate](#annotate)
+- [`annotate`](#annotate)
   - [Annotating new data with a trained `ginseng` model](#annotating-new-data-with-a-trained-ginseng-model)
 
 ## `data`
