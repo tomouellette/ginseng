@@ -2,9 +2,8 @@ import numpy as np
 import pytest
 
 from anndata import AnnData
-from dataclasses import dataclass, field
 
-from ginseng.annotate import annotate
+from ginseng.annotate import GinsengAnnotate
 from ginseng.data import GinsengDataset
 from ginseng.train import GinsengTrainerSettings, GinsengTrainer
 
@@ -43,27 +42,27 @@ def test_gene_overlap_failure(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(100, 200).astype(str)
     with pytest.raises(ValueError):
-        annotate(model_state, adata, gene_key="gene")
+        GinsengAnnotate(model_state, adata, gene_key="gene")
 
 
 def test_gene_overlap_partial(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(50, 150).astype(str)
     with pytest.warns(UserWarning):
-        annotate(model_state, adata, gene_key="gene")
+        GinsengAnnotate(model_state, adata, gene_key="gene")
 
 
 def test_gene_key_failure(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(50, 150).astype(str)
     with pytest.raises(ValueError):
-        annotate(model_state, adata, gene_key="bad_gene_key")
+        GinsengAnnotate(model_state, adata, gene_key="bad_gene_key")
 
 
 def test_return_probs(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(0, 100).astype(str)
-    probs = annotate(model_state, adata, gene_key="gene", return_probs=True)
+    probs = GinsengAnnotate(model_state, adata, gene_key="gene", return_probs=True)
 
     row_sum = probs.to_numpy().sum(axis=1)
     assert np.allclose(row_sum, 1)
@@ -73,16 +72,16 @@ def test_return_probs(tmp_path, adata):
 def test_return_table(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(0, 100).astype(str)
-    preds = annotate(model_state, adata, gene_key="gene", return_table=True)
+    preds = GinsengAnnotate(model_state, adata, gene_key="gene", return_table=True)
 
     assert preds.shape[0] == adata.shape[0]
-    assert np.unique(preds) in list(model_state.label_values)
+    assert np.unique(preds).astype(int) in list(model_state.label_values)
 
 
 def test_annotate_default(tmp_path, adata):
     model_state = get_model_state(adata, tmp_path)
     model_state.genes = np.arange(0, 100).astype(str)
 
-    annotate(model_state, adata, gene_key="gene")
+    GinsengAnnotate(model_state, adata, gene_key="gene")
 
     assert "ginseng_cell_type" in adata.obs.columns

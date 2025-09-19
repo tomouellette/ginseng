@@ -43,7 +43,7 @@ def adata():
         var={
             "gene": np.arange(100).astype(str),
         },
-        obs={"cell_type": 3 * [0] + 3 * [1], "donor": [*range(6)]},
+        obs={"cell_type": 3 * ["A"] + 3 * ["B"], "donor": [*range(6)]},
     )
 
 

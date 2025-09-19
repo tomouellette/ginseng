@@ -254,9 +254,9 @@ def load_ginseng_state(filename: str | Path) -> GinsengModelState:
     """
     with h5py.File(filename, "r") as f:
         # Load arrays
-        genes = f["genes"][:]
-        label_keys = f["label_keys"][:]
-        label_values = f["label_values"][:]
+        genes = f["genes"][:].astype(str)
+        label_keys = f["label_keys"][:].astype(str)
+        label_values = f["label_values"][:].astype(int)
 
         # Load metadata
         normalize = bool(f.attrs["normalize"])
@@ -280,7 +280,7 @@ def load_ginseng_state(filename: str | Path) -> GinsengModelState:
 
         return GinsengModelState(
             params=params,
-            genes=genes.astype(str),
+            genes=genes,
             label_keys=label_keys,
             label_values=label_values,
             normalize=normalize,

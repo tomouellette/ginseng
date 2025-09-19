@@ -121,7 +121,7 @@ def annotate_iter_partial(
         yield jnp.asarray(out_batch), start, end
 
 
-def annotate(
+def GinsengAnnotate(
     model_state: GinsengModelState | str | Path,
     adata: AnnData | str | Path,
     gene_key: str | None = None,
@@ -135,6 +135,7 @@ def annotate(
     return_attn: bool = False,
     return_table: bool = False,
     seed: int = 123,
+    silent: bool = False,
 ) -> None | AnnData | pd.DataFrame:
     """Annotate single-cell sequencing data using a trained ginseng model.
 
@@ -177,6 +178,8 @@ def annotate(
         the function instead.
     seed : int
         Random seed for reproducibility.
+    silent : bool
+        If True, suppress printed messages.
 
     Returns
     -------
@@ -237,15 +240,18 @@ def annotate(
 
     key = jax.random.key(seed)
 
-    label_map = dict(zip(model_state.label_keys, model_state.label_values))
+    integer_map = dict(zip(model_state.label_values, model_state.label_keys))
 
     if return_probs:
-        results = np.zeros((adata.shape[0], len(label_map)))
+        results = np.zeros((adata.shape[0], len(integer_map)))
     else:
         results = np.zeros(adata.shape[0])
 
     for x, start, end in tqdm(
-        iterator, desc="[ginseng] Annotating", total=adata.shape[0]
+        iterator,
+        desc="[ginseng] Annotating",
+        total=adata.shape[0] // batch_size,
+        disable=silent,
     ):
         logits = nn_annotate(
             model_state.params,
@@ -265,11 +271,14 @@ def annotate(
 
     if return_probs:
         probs = pd.DataFrame(results)
-        probs.columns = list(label_map.values())
+        probs.columns = list(integer_map.values())
         probs.index = adata.obs_names
         return probs
 
-    results = np.array([label_map[k] for k in results])
+    # Note: It's currently assumed that user's provide string cell type labels.
+    # It's possible a user may have integer cell type labels but likely rate.
+    # We will only make changes if a feature is requested.
+    results = np.array([str(integer_map[int(k)]) for k in results])
 
     if return_table:
         preds = pd.DataFrame(results)
