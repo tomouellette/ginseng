@@ -169,7 +169,7 @@ model_state = load_ginseng_state(model_state, "ginseng.state.hdf5")
 
 ### Annotating new data with a trained `ginseng` model
 
-If you've trained a model, annotation is simple. Just load your model state and provide an `AnnData` object or path to count data, and there you go. For optimal speed, you can tune batch size, but in most cases annotation should be fast even for hundreds of thousands of cells. Check out the docstring for details on additional arguments.
+If you've trained a model, annotation is simple. Just load your model state and provide an `AnnData` object or path to count data, and there you go. For optimal speed, you can tune batch size, but in most cases annotation should be fast (even for hundreds of thousands of cells). For more details on additional arguments, check the docs/docstring.
 
 ```python
 from ginseng.annotate import GinsengAnnotate
