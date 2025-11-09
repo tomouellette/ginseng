@@ -10,7 +10,9 @@
   uv run pytest -v
 
 @docs:
+  rm -r site
   uv run python docs/parse.py
+  uv run zensical build
 
 @push:
   #!/bin/bash

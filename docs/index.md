@@ -23,5 +23,3 @@ uv add ginseng
 ## License
 
 `ginseng` is licensed under the MIT License (see <a href="https://github.com/tomouellette/ginseng/blob/main/LICENSE">LICENSE</a>).
-
-You may not use this file except in compliance with the license. A copy of the license has been included in the root of the repository. Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the MIT license, shall be licensed as above, without any additional terms or conditions.
