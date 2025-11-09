@@ -155,29 +155,32 @@ class PythonDocParser:
             for module_name, classes, functions in toc_items:
                 # Convert module name to GitHub anchor format (lowercase, replace spaces/special chars with hyphens)
                 module_anchor = module_name.lower().replace("_", "-")
-                markdown_content.append(f"- [{module_name}](#{module_anchor})")
+                markdown_content.append(f"- [{module_name}.py](#{module_anchor}.py)")
 
                 # Add classes and their methods
                 for class_name, methods in classes:
                     class_anchor = f"class-{class_name.lower()}"
-                    markdown_content.append(f"  - [{class_name}](#{class_anchor})")
+                    markdown_content.append(f"    - [{class_name}](#{class_anchor})")
                     for method_name in methods:
+                        if method_name.startswith("__"):
+                            # Skip private methods
+                            continue
                         method_anchor = f"method-{method_name.lower()}"
                         markdown_content.append(
-                            f"    - [{method_name}](#{method_anchor})"
+                            f"        - [{method_name}](#{method_anchor})"
                         )
 
                 # Add module-level functions
                 for func_name in functions:
                     func_anchor = f"function-{func_name.lower()}"
-                    markdown_content.append(f"  - [{func_name}](#{func_anchor})")
+                    markdown_content.append(f"    - [{func_name}](#{func_anchor})")
 
             markdown_content.append("")
 
         # Generate actual documentation content
         for py_file, tree in module_content:
             module_name = py_file.stem
-            markdown_content.append(f"## `{module_name}`\n")
+            markdown_content.append(f"## `{module_name}.py`\n")
 
             # Classes first
             for node in tree.body:
@@ -192,9 +195,10 @@ class PythonDocParser:
                         markdown_content.append(f"{class_info.full_description}\n")
                     if class_info.parameters:
                         markdown_content.append("**Attributes:**")
+                        markdown_content.append("")
                         for param in class_info.parameters:
                             markdown_content.append(
-                                f"- **{param.name}** (`{param.type_hint}`): {param.description}"
+                                f"  - **{param.name}** (`{param.type_hint}`): {param.description}"
                             )
                         markdown_content.append("")
 
@@ -204,6 +208,10 @@ class PythonDocParser:
                             method_info = self.extract_function_info(method_node)
                             if not method_info:
                                 continue
+                            if method_info.name.startswith("__"):
+                                # Skip private methods
+                                continue
+
                             markdown_content.append(
                                 f"#### Method `{method_info.name}`\n"
                             )
@@ -215,6 +223,7 @@ class PythonDocParser:
                                 )
                             if method_info.parameters:
                                 markdown_content.append("**Parameters:**")
+                                markdown_content.append("")
                                 for param in method_info.parameters:
                                     markdown_content.append(
                                         f"- **{param.name}** (`{param.type_hint}`): {param.description}"
@@ -222,6 +231,7 @@ class PythonDocParser:
                                 markdown_content.append("")
                             if method_info.returns:
                                 markdown_content.append("**Returns:**")
+                                markdown_content.append("")
                                 markdown_content.append(
                                     f"- `{method_info.returns}`: {method_info.returns_description}"
                                 )
@@ -240,6 +250,7 @@ class PythonDocParser:
                         markdown_content.append(f"{func_info.full_description}\n")
                     if func_info.parameters:
                         markdown_content.append("**Parameters:**")
+                        markdown_content.append("")
                         for param in func_info.parameters:
                             markdown_content.append(
                                 f"- **{param.name}** (`{param.type_hint}`): {param.description}"
@@ -247,6 +258,7 @@ class PythonDocParser:
                         markdown_content.append("")
                     if func_info.returns:
                         markdown_content.append("**Returns:**")
+                        markdown_content.append("")
                         markdown_content.append(
                             f"- `{func_info.returns}`: {func_info.returns_description}"
                         )

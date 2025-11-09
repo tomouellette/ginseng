@@ -1,0 +1,27 @@
+.md-header {
+    color: black;
+    background-color: rgba(111, 192, 154, 1);
+}
+
+.md-header__topic {
+    color: black;
+}
+
+.md-search__button {
+    color: black;
+}
+
+.md-search__button::after {
+    color: black;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.md-search__button::before {
+    color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.md-header__button.md-logo img {
+    height: 5em;
+}
+ 

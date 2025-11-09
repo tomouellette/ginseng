@@ -20,6 +20,9 @@ dependencies = [
 exclude-package-data = { "" = ["src/tests/data/*"] }
 
 [dependency-groups]
+docs = [
+    "zensical>=0.0.5",
+]
 dev = [
     "pytest>=8.3.5",
 	"numpydoc"

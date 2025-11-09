@@ -153,7 +153,7 @@ class GinsengLogger:
         has_train = len(self.train_loss) > 0
         has_holdout = len(self.holdout_loss) > 0
 
-        msg = f"[ginseng] Epoch {self.epoch[-1]+1} report | "
+        msg = f"[ginseng] Epoch {self.epoch[-1] + 1} report | "
         if has_train:
             msg += f" Training loss: {self.train_loss[-1]:.3e} | "
 
@@ -220,10 +220,9 @@ def GinsengTrainer(
 
     Returns
     -------
-    logger : GinsengLogger
-        Training log with loss and accuracy metrics across epochs.
-    state : GinsengModelState
-        Final trained model state including parameters and metadata.
+    tuple[GinsengLogger, GinsengModelState]
+        Training log with loss and accuracy metrics across epochs, and the final trained
+        model state including parameters and metadata.
     """
     if isinstance(dataset, (str, Path)):
         dataset = GinsengDataset(dataset)
@@ -291,7 +290,7 @@ def GinsengTrainer(
         losses = []
         with tqdm(
             train_iterator,
-            desc=f"[ginseng] Train {epoch+1}/{epochs}",
+            desc=f"[ginseng] Train {epoch + 1}/{epochs}",
             unit="step",
             disable=silent,
             total=dataset.n_batches,
@@ -326,7 +325,7 @@ def GinsengTrainer(
         holdout_losses, holdout_correct, holdout_total = [], 0, 0
         with tqdm(
             holdout_iterator,
-            desc=f"[ginseng] Holdout {epoch+1}/{epochs}",
+            desc=f"[ginseng] Holdout {epoch + 1}/{epochs}",
             unit="step",
             disable=silent,
             total=dataset.n_batches,
