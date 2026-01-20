@@ -8,6 +8,25 @@ URLs) into a compressed on-disk `zarr` store for training. This allows for
 memory-efficient training by streaming mini-batches without loading the entire
 dataset into RAM.
 
+### Selecting highly variable genes
+
+To reduce dimensionlity of the input data, `ginseng` provides built-in support for selecting highly variable genes from in-memory or backed AnnData. The `select_hvgs` function is implemented using
+a chunk-based strategy so it will identify HVGs even for very large datasets without loading everything into memory.
+
+```python
+from ginseng.data.io import read_adata
+from ginseng.utils import select_hvgs
+
+# Load AnnData object
+adata = read_adata("data.h5ad", backed="r")
+
+# Select highly variable genes
+select_hvgs(adata, n_top_genes=2000)
+
+# Access highly variable genes
+assert "ginseng_genes" in adata.var
+```
+
 ### Creating a `GinsengDataset`
 
 To convert your raw counts into a `GinsengDataset`, the `create` class method can be used. The `.create` method handles gene subsetting, label encoding, and disk serialization.
@@ -21,7 +40,7 @@ ds = GinsengDataset.create(
     adata="path/to/counts.h5ad",     # Input data (Path, URL, or AnnData)
     label_key="cell_type",           # Target labels in adata.obs
     layer="counts",                  # Optional: specify a layer (e.g., raw counts)
-    genes="highly_variable",         # Optional: use a mask in adata.var
+    genes="ginseng_genes",           # Optional: use a mask in adata.var
     group_key="batch"                # Optional: metadata for stratified splitting
 )
 ```

@@ -10,7 +10,7 @@
   uv run pytest -v
 
 @docs:
-  rm -r site
+  if [ -d site ]; then rm -r site; fi
   uv run python docs/parse.py
   uv run zensical build
 
