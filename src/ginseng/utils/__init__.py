@@ -1,6 +1,6 @@
 # Copyright (c) 2025, Tom Ouellette
 # Licensed under the MIT License
 
-from ginseng.model.predict import classify
+from .hvg import select_hvgs
 
-__all__ = ["classify"]
+__all__ = ["select_hvgs"]

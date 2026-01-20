@@ -48,7 +48,8 @@ Copyright &copy; 2025 Tom W. Ouellette
 nav = [
   { "Get started" = "index.md" },
   { "Guides" = [
-    { "Basic usage" = "guides/basic.md" }
+    { "Basic usage" = "guides/basic.md" },
+    { "Training a model to annotate new data" = "guides/uterine.md" }
   ]},
   { "API" = "api.md" }
 ]
@@ -101,7 +102,6 @@ extra_javascript = [
 # - https://zensical.org/docs/setup/logo-and-icons/#favicon
 # - https://developer.mozilla.org/en-US/docs/Glossary/Favicon
 #
-favicon = "assets/images/favicon.png"
 
 # Zensical supports more than 60 different languages. This means that the
 # labels and tooltips that Zensical's templates produce are translated.
@@ -267,6 +267,7 @@ features = [
 # ----------------------------------------------------------------------------
 [project.theme]
 logo = "assets/logo.svg"
+favicon = "assets/images/favicon.png"
 features = [
     "navigation.expand"
 ]

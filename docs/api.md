@@ -1,557 +1,640 @@
-# API
+# API Reference
 
 ## Table of Contents
 
-- [annotate.py](#annotate.py)
-    - [annotate_iter_full](#function-annotate_iter_full)
-    - [annotate_iter_partial](#function-annotate_iter_partial)
-    - [GinsengAnnotate](#function-ginsengannotate)
-- [augment.py](#augment.py)
-    - [augment_mask](#function-augment_mask)
-    - [augment_background](#function-augment_background)
-    - [augment_dropgene](#function-augment_dropgene)
-    - [augment](#function-augment)
-- [data.py](#data.py)
-    - [GinsengDataset](#class-ginsengdataset)
-        - [_create_from_numpy](#method-_create_from_numpy)
-        - [_create_from_sparse](#method-_create_from_sparse)
-        - [create](#method-create)
-        - [_reopen_readonly](#method-_reopen_readonly)
-        - [_load_metadata](#method-_load_metadata)
-        - [has_holdout](#method-has_holdout)
-        - [make_holdout](#method-make_holdout)
-        - [get_batch](#method-get_batch)
-        - [iter_batches](#method-iter_batches)
-- [io.py](#io.py)
-    - [read_10x_mtx](#function-read_10x_mtx)
-    - [read_10x_h5](#function-read_10x_h5)
-    - [read_adata](#function-read_adata)
-    - [save_ginseng_state](#function-save_ginseng_state)
-    - [load_ginseng_state](#function-load_ginseng_state)
-- [nn.py](#nn.py)
-    - [nn_xavier_uniform](#function-nn_xavier_uniform)
-    - [nn_init_linear](#function-nn_init_linear)
-    - [nn_linear](#function-nn_linear)
-    - [nn_dropout](#function-nn_dropout)
-    - [nn_normalize](#function-nn_normalize)
-    - [nn_annotate_init](#function-nn_annotate_init)
-    - [nn_annotate](#function-nn_annotate)
-    - [nn_annotate_loss](#function-nn_annotate_loss)
-    - [nn_annotate_evaluate](#function-nn_annotate_evaluate)
-- [opt.py](#opt.py)
-    - [AdamState](#class-adamstate)
-    - [opt_init_adam](#function-opt_init_adam)
-    - [opt_adam_update](#function-opt_adam_update)
-- [train.py](#train.py)
-    - [GinsengTrainerSettings](#class-ginsengtrainersettings)
-    - [GinsengLogger](#class-ginsenglogger)
-        - [update](#method-update)
-        - [report](#method-report)
-    - [GinsengModelState](#class-ginsengmodelstate)
-    - [GinsengTrainer](#function-ginsengtrainer)
-- [utils.py](#utils.py)
-    - [compute_hvgs](#function-compute_hvgs)
+- [data/dataset.py](#datadatasetpy)
+    - [Class: GinsengDataset](#class-ginsengdataset)
+        - [Method: _load_metadata](#method--load-metadata)
+        - [Method: create](#method-create)
+        - [Method: make_split](#method-make-split)
+        - [Method: stream](#method-stream)
+- [data/io.py](#dataiopy)
+    - [Function: read_10x_mtx](#function-read-10x-mtx)
+    - [Function: read_10x_h5](#function-read-10x-h5)
+    - [Function: read_adata](#function-read-adata)
+    - [Function: _load_pytree](#function--load-pytree)
+    - [Function: save_model](#function-save-model)
+    - [Function: _save_pytree](#function--save-pytree)
+    - [Function: load_model](#function-load-model)
+- [model/nn.py](#modelnnpy)
+    - [Class: GinsengClassifier](#class-ginsengclassifier)
+        - [Method: _get_key](#method--get-key)
+        - [Method: predict](#method-predict)
+        - [Method: loss](#method-loss)
+        - [Method: evaluate](#method-evaluate)
+    - [Function: nn_xavier_uniform](#function-nn-xavier-uniform)
+    - [Function: nn_init_linear](#function-nn-init-linear)
+    - [Function: nn_linear](#function-nn-linear)
+    - [Function: nn_dropout](#function-nn-dropout)
+    - [Function: nn_normalize](#function-nn-normalize)
+    - [Function: nn_annotate_init](#function-nn-annotate-init)
+    - [Function: nn_annotate](#function-nn-annotate)
+    - [Function: nn_annotate_loss](#function-nn-annotate-loss)
+    - [Function: nn_annotate_evaluate](#function-nn-annotate-evaluate)
+- [model/predict.py](#modelpredictpy)
+    - [Function: _get_gene_indices](#function--get-gene-indices)
+    - [Function: annotate_iter](#function-annotate-iter)
+    - [Function: classify](#function-classify)
+- [model/state.py](#modelstatepy)
+    - [Class: GinsengClassifierState](#class-ginsengclassifierstate)
+    - [Function: classifier_from_state](#function-classifier-from-state)
+    - [Function: state_from_classifier_trainer](#function-state-from-classifier-trainer)
+- [train/augment.py](#trainaugmentpy)
+    - [Function: augment_mask](#function-augment-mask)
+    - [Function: augment_background](#function-augment-background)
+    - [Function: augment_dropgene](#function-augment-dropgene)
+    - [Function: augment](#function-augment)
+- [train/logger.py](#trainloggerpy)
+    - [Class: GinsengLogger](#class-ginsenglogger)
+        - [Method: update](#method-update)
+        - [Method: report](#method-report)
+- [train/opt.py](#trainoptpy)
+    - [Class: AdamState](#class-adamstate)
+    - [Function: opt_init_adam](#function-opt-init-adam)
+    - [Function: opt_adam_update](#function-opt-adam-update)
+- [train/trainer.py](#traintrainerpy)
+    - [Class: GinsengClassifierTrainerSettings](#class-ginsengclassifiertrainersettings)
+    - [Class: GinsengClassifierTrainer](#class-ginsengclassifiertrainer)
+        - [Method: _train_step](#method--train-step)
+        - [Method: fit](#method-fit)
+        - [Method: _run_epoch](#method--run-epoch)
+        - [Method: _validate](#method--validate)
+- [utils/hvg.py](#utilshvgpy)
+    - [Function: select_hvgs](#function-select-hvgs)
 
-## `annotate.py`
+---
 
-### Function `annotate_iter_full`
+## <a name="datadatasetpy"></a>File: `data/dataset.py`
 
-Iterator over AnnData returning jax arrays when all genes are present.
+### <a name="class-ginsengdataset"></a>Class `GinsengDataset`
 
-**Parameters:**
-
-- **adata** (`AnnData`): AnnData object.
-- **gene_names** (`list[str]`): Genes ordered as in training.
-- **gene_key** (`str | None`): Column in .var where gene names are stored.
-- **batch_size** (`int`): Number of cells per batch. Yields ------ jax.numpy.ndarray Array of shape (batch_size, len(gene_names))
-
-### Function `annotate_iter_partial`
-
-Iterator over AnnData when genes are missing which were used during training.
-
-**Parameters:**
-
-- **adata** (`AnnData`): AnnData object.
-- **gene_names** (`list[str]`): Genes ordered as in training.Missing genes are filled with zeros.
-- **gene_key** (`str | None`): Column in .var where gene names are stored.
-- **batch_size** (`int`): Number of barcodes per batch. Yields ------ jax.numpy.ndarray Array of shape (batch_size, genes)
-
-### Function `GinsengAnnotate`
-
-Annotate single-cell sequencing data using a trained ginseng model.
-
-**Parameters:**
-
-- **model_state** (`GinsengModelState | str | Path`): Model state containing parameters, genes, labels, and metadata.
-- **adata** (`AnnData | str | Path`): AnnData object or path to count data stored in 10x .h5 format, AnnData .h5ad format, or in a 10x matrix market format folder.
-- **gene_key** (`str | None`): Column in .var where gene names are stored.
-- **backed** (`bool`): If True and adata is a str or Path, then read count data in on-disk/backed mode. When running in backed mode, memory requirements will be lower at cost of longer running times (only relevant for large datasets).
-- **normalize** (`bool`): Override normalize in model_state. This may be useful if you do not have access to raw counts. Be aware that differences in normalization between training and inference will likely change performance.
-- **target_sum** (`bool`): Override target_sum in model_state. As noted in the normalize argument, modifying target_sum will likely change model performance.
-- **randomness** (`bool`): If True, dropout remains active during inference. This enables techniques like Monte Carlo dropout, where repeated stochastic forward passes yield an approximate predictive distribution by sampling subnetworks.
-- **batch_size** (`int`): Annotate data in chunks of size (batch_size). If your dataset is not large and you have sufficient memory, then batch size can be set to total number of rows.
-- **copy** (`bool`): If True, return a copy of the AnnData object else modify in-place.
-- **return_probs** (`bool`): If True, return a table of cell type softmax probabilities for each barcode.
-- **return_attn** (`bool`): If True, return the predicted gene-level weights associated with each barcode. Note that this will be an array of N cells by N genes ( not recommended for large datasets).
-- **return_table** (`bool`): If True, a two column table with columns 'barcode' and 'cell_type' is returned from the function instead.
-- **seed** (`int`): Random seed for reproducibility.
-- **silent** (`bool`): If True, suppress printed messages.
-
-**Returns:**
-
-- `None | AnnData | pd.DataFrame`: By default, AnnData is modified in place. If copy=True, then an AnnData is returned. If return_table=True, then a data frame with  barcode and cell type info is returned.
-
-## `augment.py`
-
-### Function `augment_mask`
-
-Randomly mask out counts across cells.
-
-**Parameters:**
-
-- **key** (`Array`): PRNG key array for dropout mask.
-- **x** (`Array`): Input tensor.
-- **rate** (`float`): Dropout probability.
-
-**Returns:**
-
-- `Array`: Tensor with dropout applied.
-
-### Function `augment_background`
-
-Randomly add Poisson-distributed background noise to counts.
-
-**Parameters:**
-
-- **key** (`Array`): PRNG key array for noise generation.
-- **x** (`Array`): Non-normalized count matrix.
-- **lam_max** (`float`): Maximum mean of Poisson distribution for sampling added noise.
-
-**Returns:**
-
-- `Array`: Counts with added Poisson noise.
-
-### Function `augment_dropgene`
-
-Randomly zero out entire genes.
-
-**Parameters:**
-
-- **key** (`Array`): PRNG key array for mask generation.
-- **x** (`Array`): Count matrix.
-- **lower** (`int`): Minimum number of genes to mask out.
-- **upper** (`int`): Maximum (exclusive) number of genes to mask out.
-
-**Returns:**
-
-- `Array`: Filtered counts.
-
-### Function `augment`
-
-Apply a combination of single-cell RNA relevant augmentations.
-
-**Parameters:**
-
-- **key** (`Array`): PRNG key array for mask generation.
-- **x** (`Array`): Count matrix.
-- **rate** (`float`): Dropout probability.
-- **lam_max** (`float`): Maximum mean of Poisson distribution for sampling added noise.
-- **lower** (`int`): Minimum number of genes to mask out.
-- **upper** (`int`): Maximum (exclusive) number of genes to mask out.
-
-**Returns:**
-
-- `Array`: Augmented counts.
-
-## `data.py`
-
-### Class `GinsengDataset`
-
-A zarr-based dataset for efficient cell-level access.
+An on-disk dataset for training single-cell classifiers.
 
 **Attributes:**
 
-  - **path** (`Path`): Path to ginseng dataset zarr file.
-  - **store** (`LocalStore`): Initialized local zarr store.
-  - **root** (`zarr.group`): Zarr group containing structured ginseng dataset.
+  - **path** (`Path`): Path to the zarr dataset on disk.
+  - **root** (`zarr.Group`): The root zarr group object.
+  - **n_cells** (`int`): Total number of cells (observations) in the dataset.
+  - **n_genes** (`int`): Total number of genes (variables) in the dataset.
+  - **label_names** (`list of str`): Human-readable names for the integer labels.
+  - **gene_names** (`list of str`): Names of the genes stored in the dataset.
+  - **labels** (`np.ndarray`): Integer labels for every cell in the dataset.
+  - **groups** (`np.ndarray or None`): Categorical group indices (e.g., batch or donor) if provided.
+  - **train_idx** (`np.ndarray or None`): Indices of cells assigned to the training split.
+  - **test_idx** (`np.ndarray or None`): Indices of cells assigned to the test split.
 
-#### Method `_create_from_numpy`
+#### <a name="method--load-metadata"></a>Method `_load_metadata`
 
-Create cached dataset from a dense numpy array.
+Load metadata and small arrays into memory.
+
+#### <a name="method-create"></a>Method `create`
+
+Create a GinsengDataset from an AnnData object or file path.
 
 **Parameters:**
 
-- **path** (`str | Path`): Path to store the new dataset.
-- **X** (`np.ndarray`): Dense count matrix.
-- **labels** (`np.ndarray`): Array of labels for each barcode.
-- **chunk_size** (`tuple[int, int]`): Chunk size for storing counts.
-- **groups** (`np.ndarray`): Group-level information used to stratify holdout data. If provided, no unique group will have data in both training and holdout when using `make_holdout`.
-- **genes** (`np.ndarray`): Gene names arranged in order used for training.
-- **column_mask** (`np.ndarray`): Boolean mask specifying which columns to include.
+  - **path** (`str | Path`): Output path where the zarr dataset directory will be created.
+  - **adata** (`str | Path | ad.AnnData`): Input data. Can be an AnnData object, a local path to a (.h5ad, .h5, or 10x directory), or a URL to a supported file format.
+  - **label_key** (`str`): The column name in `adata.obs` containing the target labels (e.g., cell type).
+  - **layer** (`str, optional`): The key in `adata.layers` to use for expression counts. If None, uses `adata.X` (default : None).
+  - **genes** (`str | list of str | np.ndarray, optional`): Gene selection/filtering logic. - If a string: Assumes it is a column in `adata.var` containing a boolean mask (e.g., "highly_variable"). - If a list or array: A specific set of gene names to keep. This will also reorder the output to match the provided list. - If None: Keeps all genes (default : None).
+  - **group_key** (`str, optional`): The column name in `adata.obs` containing grouping metadata, such as "batch" or "donor" (default : None).
+  - **chunk_size** (`int`): Number of rows (cells) per zarr chunk for the expression matrix. Larger chunks improve compression but require more RAM during streaming (default : 4096).
+  - **overwrite** (`bool`): Whether to delete the existing directory at `path` if it exists (default : True).
 
 **Returns:**
 
-- `GinsengDataset`: Instance of the created dataset.
+  - `GinsengDataset`: An initialized instance of the dataset pointing to the new zarr store.
 
-#### Method `_create_from_sparse`
+#### <a name="method-make-split"></a>Method `make_split`
 
-Create cached dataset from a sparse count matrix.
-
-**Parameters:**
-
-- **path** (`str | Path`): Path to store the new dataset.
-- **adata** (`AnnData`): AnnData object.
-- **labels** (`np.ndarray`): Array of labels for each barcode.
-- **chunk_size** (`tuple[int, int]`): Chunk size for storing counts.
-- **groups** (`np.ndarray`): Group-level information used to stratify holdout data. If provided, no unique group will have data in both training and holdout when using `make_holdout`.
-- **genes** (`np.ndarray`): Gene names arranged in order used for training.
-- **column_mask** (`np.ndarray`): Boolean mask specifying which columns to include.
-
-**Returns:**
-
-- `GinsengDataset`: Instance of the created dataset.
-
-#### Method `create`
-
-Autodetect array type and create a dataset.
+Create train/test splits and store indices on disk.
 
 **Parameters:**
 
-- **path** (`str | Path`): Path to store the new dataset.
-- **adata** (`AnnData`): Annotated data storing count matrix.
-- **labels** (`np.ndarray | str`): Array of labels for each barcode or key in AnnData.obs specifying labels.
-- **chunk_size** (`int | tuple[int, int]`): Chunk size for storing counts. An integer specifies row-wise chunk size and a tuple of integers specifies row and column-wise chunk size. When an integer or no chunk size is provided, the column-wise chunk size is set to number of the number of included genes.
-- **groups** (`np.ndarray`): Array of group-level information for each barcode or key in AnnData.obs that specifies groups. Group-level informatiion is used to stratify holdout data.
-- **gene_key** (`str`): If provided, the column where gene names are stored. By default, the index of `adata.var` is assumed to store the gene names.
-- **gene_mask** (`np.ndarray`): Boolean mask specifying which genes to include.
+  - **fraction** (`float`): The proportion of data (or groups) to include in the test split. Must be in the range [0.0, 1.0) (default : 0.1).
+  - **stratify_group** (`bool`): If True, splits by groups (e.g., donors) rather than individual cells. Requires group_key to have been provided during creation (default : False).
+  - **seed** (`int`): Random seed for reproducibility (default : 123).
 
-**Returns:**
+#### <a name="method-stream"></a>Method `stream`
 
-- `GinsengDataset`: Instance of the created  dataset.
-
-#### Method `_reopen_readonly`
-
-Helper to reopen store in read-only mode
-
-#### Method `_load_metadata`
-
-Load metadata from zarr store.
-
-#### Method `has_holdout`
-
-Whether the dataset has a train/holdout split.
-
-#### Method `make_holdout`
-
-Create and persist a train/holdout split.
+Stream mini-batches of (expression, label) from the zarr store.
 
 **Parameters:**
 
-- **holdout_fraction** (`float`): Fraction of samples to allocate to holdout. The total number of samples held out per label is determined by min(N labels per label) * `holdout_fraction`. When group_level is True, then holdout_fraction specifies the fraction of unique groups to hold out.
-- **rng** (`np.random.Generator, optional`): Random number generator for reproducibility.
-- **group_level** (`bool`): If True, split data based on group-level information.
-- **group_mode** (`str`): If 'fraction' then N groups x `holdout_fraction` groups will be held out. If 'loo', then a single group will be held out (leave one out).
+  - **batch_size** (`int`): Number of cells to yield in each batch.
+  - **split** (`Literal["train", "test", "all"]`): Which data split to stream from (default : "train").
+  - **balance_labels** (`bool`): If True, downsamples the training split to match the frequency of the least common class (default : False).
+  - **shuffle** (`bool`): Whether to shuffle the indices before streaming (default : True).  Yields ------
+  - **X** (`np.ndarray`): Expression matrix batch of shape (batch_size, n_genes).
+  - **y** (`np.ndarray`): Integer labels batch of shape (batch_size,).
 
-#### Method `get_batch`
+## <a name="dataiopy"></a>File: `data/io.py`
 
-Retrieve a batch of count data for given cell indices.
-
-**Parameters:**
-
-- **indices** (`np.ndarray`): Array of cell indices to retrieve.
-
-**Returns:**
-
-- `np.ndarray`: Expression matrix subset of shape (len(indices), n_features).
-
-#### Method `iter_batches`
-
-Iterate through the dataset in batches.
-
-**Parameters:**
-
-- **batch_size** (`int`): Number of samples per batch.
-- **shuffle** (`bool`): Whether to shuffle the dataset before batching.
-- **rng** (`np.random.Generator`): Random number generator used if shuffling.
-- **split** (`str`): Subset of data to iterate over ("all", "train", or "holdout").
-- **balance_train** (`bool`): If True, then force training set to have an equal number of each label. Yields ------ tuple[np.ndarray, np.ndarray] Batches of expression data and labels.
-
-## `io.py`
-
-### Function `read_10x_mtx`
+### <a name="function-read-10x-mtx"></a>Function `read_10x_mtx`
 
 Read 10x Genomics mtx format into an AnnData object.
 
 **Parameters:**
 
-- **path** (`str`): Path to directory containing matrix.mtx, barcodes.tsv, and genes.tsv/features.tsv.
-- **var_names** (`str`): Select 'gene_symbols' or 'gene_ids' as index for var.
-- **make_unique** (`bool`): If True, make var_names unique.
+  - **path** (`str`): Path to directory containing matrix.mtx, barcodes.tsv, and genes.tsv/features.tsv.
+  - **var_names** (`str`): Select 'gene_symbols' or 'gene_ids' as index for var.
+  - **make_unique** (`bool`): If True, make var_names unique.
 
 **Returns:**
 
-- `AnnData`: 
+  - `AnnData`: 
 
-### Function `read_10x_h5`
+### <a name="function-read-10x-h5"></a>Function `read_10x_h5`
 
 Read 10x Genomics h5 format into an AnnData object.
 
 **Parameters:**
 
-- **path** (`str`): Path to 10x Genomics .h5 file.
-- **genome** (`str, optional`): Genome to extract (if file contains multiple genomes). If None, will use the first genome available.
-- **var_names** (`str`): Select 'gene_symbols' or 'gene_ids' as index for var.
-- **make_unique** (`bool`): If True, make var_names unique.
+  - **path** (`str`): Path to 10x Genomics .h5 file.
+  - **genome** (`str, optional`): Genome to extract (if file contains multiple genomes). If None, will use the first genome available.
+  - **var_names** (`str`): Select 'gene_symbols' or 'gene_ids' as index for var.
+  - **make_unique** (`bool`): If True, make var_names unique.
 
 **Returns:**
 
-- `AnnData`: 
+  - `AnnData`: 
 
-### Function `read_adata`
+### <a name="function-read-adata"></a>Function `read_adata`
 
 Read an AnnData object from various supported file formats.
 
 **Parameters:**
 
-- **path** (`str | Path`): Path to the input count data stored in 10x .h5 format, AnnData .h5ad format, or in a 10x matrix market format folder.
-- **backed** (`bool`): If True and the input is an `.h5ad` file, open the file in backed mode.
+  - **path** (`str | Path`): Path to the input count data stored in 10x .h5 format, AnnData .h5ad format, or in a 10x matrix market format folder.
+  - **backed** (`bool`): If True and the input is an `.h5ad` file, open the file in backed mode.
 
 **Returns:**
 
-- `AnnData`: The loaded AnnData object containing gene expression data.
+  - `AnnData`: The loaded AnnData object containing gene expression data.
 
-### Function `save_ginseng_state`
+### <a name="function--load-pytree"></a>Function `_load_pytree`
 
-Save a Ginseng model state to disk.
+Recursively load a PyTree from an HDF5 group.
 
-**Parameters:**
+### <a name="function-save-model"></a>Function `save_model`
 
-- **state** (`GinsengModelState`): Model state containing parameters, genes, labels, and metadata.
-- **filename** (`str | Path`): Path where the model state will be stored.
-
-### Function `load_ginseng_state`
-
-Load a Ginseng model state.
+Save a Ginseng model state to a single HDF5 file.
 
 **Parameters:**
 
-- **filename** (`str | Path`): Path to the HDF5 file containing the saved model state.
+  - **state** (`GinsengClassifierState`): Complete model state to save.
+  - **path** (`str | Path`): Path to the output HDF5 file (will add .h5 if not present).
+
+**Examples:**
+
+```python
+>>> # After training
+>>> state = GinsengClassifierState(
+...     params=model.params,
+...     genes=dataset.gene_names,
+...     label_keys=dataset.label_names,
+...     label_values=np.arange(len(dataset.label_names)),
+...     n_genes=dataset.n_genes,
+...     n_classes=len(dataset.label_names),
+...     hidden_dim=256,
+...     normalize=True,
+...     target_sum=1e4,
+...     dropout_rate=0.5,
+...     training=False,
+... )
+>>> save_model(state, "./models/my_classifier.h5")
+```
+
+### <a name="function--save-pytree"></a>Function `_save_pytree`
+
+Recursively save a PyTree to an HDF5 group.
+
+### <a name="function-load-model"></a>Function `load_model`
+
+Load a Ginseng model state from an HDF5 file.
+
+**Parameters:**
+
+  - **path** (`str | Path`): Path to the HDF5 file.
 
 **Returns:**
 
-- `GinsengModelState`: Reconstructed model state.
+  - `GinsengClassifierState`: Complete model state ready for inference or continued training.
 
-## `nn.py`
+**Examples:**
 
-### Function `nn_xavier_uniform`
+```python
+>>> state = load_model("./models/my_classifier.h5")
+>>>
+>>> # Recreate model
+>>> model = GinsengClassifier(
+...     n_genes=state.n_genes,
+...     n_classes=state.n_classes,
+...     hidden_dim=state.hidden_dim,
+...     dropout_rate=state.dropout_rate,
+...     normalize=state.normalize,
+...     target_sum=state.target_sum,
+... )
+>>> model.params = state.params
+>>>
+>>> # Prepare new data with correct gene order
+>>> new_data_ordered = new_data[state.genes]
+>>> predictions = model.predict(new_data_ordered.values, training=False)
+```
+
+## <a name="modelnnpy"></a>File: `model/nn.py`
+
+### <a name="class-ginsengclassifier"></a>Class `GinsengClassifier`
+
+Wrapper class for cell type annotation with automatic key management.
+
+**Attributes:**
+
+  - **n_genes** (`int`): Number of genes in input data.
+  - **n_classes** (`int`): Number of cell type classes.
+  - **hidden_dim** (`int`): Hidden dimension for attention mechanism (default: 256).
+  - **dropout_rate** (`float`): Dropout rate during training (default: 0.5).
+  - **normalize** (`bool`): Whether to normalize input data (default: True).
+  - **target_sum** (`None | float`): Target sum for normalization (default: 1e4).
+  - **seed** (`int`): Random seed for reproducibility (default: 42).
+
+**Examples:**
+
+```python
+>>> model = GinsengClassifier(n_genes=2000, n_classes=10)
+>>> # During training (JAX-compatible)
+>>> loss = model.loss(model.params, model._get_key(), x_batch, y_batch)
+>>> # For prediction (Standard usage)
+>>> logits = model.predict(x_test, training=False)
+```
+
+#### <a name="method--get-key"></a>Method `_get_key`
+
+Get a new PRNG key and update internal state.
+
+**Returns:**
+
+  - `Array`: A new JAX PRNG key.
+
+#### <a name="method-predict"></a>Method `predict`
+
+Generate predictions for input data.
+
+**Parameters:**
+
+  - **x** (`Array`): Input gene expression matrix.
+  - **params** (`PyTree, optional`): Model parameters. If None, uses internal self.params.
+  - **key** (`Array, optional`): PRNG key. If None, uses a new key from self._get_key().
+  - **training** (`bool`): Whether to use training mode (with dropout).
+  - **return_attn** (`bool`): Whether to return attention weights.
+
+**Returns:**
+
+  - `Array or tuple`: Logits, or (logits, attention) if return_attn=True.
+
+#### <a name="method-loss"></a>Method `loss`
+
+Compute cross-entropy loss for a batch.
+
+**Parameters:**
+
+  - **params** (`PyTree`): Model parameters to differentiate against.
+  - **key** (`Array`): PRNG key for dropout randomness.
+  - **x** (`Array`): Input gene expression matrix.
+  - **y** (`Array`): True class labels.
+
+**Returns:**
+
+  - `Array`: Scalar loss value.
+
+#### <a name="method-evaluate"></a>Method `evaluate`
+
+Evaluate model on a batch and return loss and accuracy.
+
+**Parameters:**
+
+  - **x** (`Array`): Input gene expression matrix.
+  - **y** (`Array`): True class labels.
+
+**Returns:**
+
+  - `tuple[float, float]`: (loss, accuracy) on the batch.
+
+### <a name="function-nn-xavier-uniform"></a>Function `nn_xavier_uniform`
 
 Initialize weights with Xavier uniform distribution.
 
 **Parameters:**
 
-- **key** (`Array`): PRNG key array for random number generation.
-- **shape** (`tuple of int`): Shape of the weight matrix.
+  - **key** (`Array`): PRNG key array for random number generation.
+  - **shape** (`tuple of int`): Shape of the weight matrix.
 
 **Returns:**
 
-- `Array`: Initialized weight matrix.
+  - `Array`: Initialized weight matrix.
 
-### Function `nn_init_linear`
+### <a name="function-nn-init-linear"></a>Function `nn_init_linear`
 
 Initialize parameters for a linear layer.
 
 **Parameters:**
 
-- **key** (`Array`): PRNG key array for random initialization.
-- **in_dim** (`int`): Input dimension.
-- **out_dim** (`int`): Output dimension.
+  - **key** (`Array`): PRNG key array for random initialization.
+  - **in_dim** (`int`): Input dimension.
+  - **out_dim** (`int`): Output dimension.
 
 **Returns:**
 
-- `PyTree[Float[Array, "..."]]`: Dictionary with weight matrix `W` and bias vector `b`.
+  - `PyTree[Float[Array, "..."]]`: Dictionary with weight matrix `W` and bias vector `b`.
 
-### Function `nn_linear`
+### <a name="function-nn-linear"></a>Function `nn_linear`
 
 Apply a linear transformation.
 
 **Parameters:**
 
-- **params** (`PyTree[Float[Array, "..."]]`): Layer parameters with `W` and `b`.
-- **x** (`Array`): Input tensor.
+  - **params** (`PyTree[Float[Array, "..."]]`): Layer parameters with `W` and `b`.
+  - **x** (`Array`): Input tensor.
 
 **Returns:**
 
-- `Array`: Transformed output tensor.
+  - `Array`: Transformed output tensor.
 
-### Function `nn_dropout`
+### <a name="function-nn-dropout"></a>Function `nn_dropout`
 
-Apply dropout to input array.
+Apply dropout to input array with optimized implementation.
 
 **Parameters:**
 
-- **key** (`Array`): PRNG key array for dropout mask.
-- **x** (`Array`): Input tensor.
-- **rate** (`float`): Dropout probability.
-- **training** (`bool`): If True, apply dropout. Set to False for determinstic output after training.
+  - **key** (`Array`): PRNG key array for dropout mask.
+  - **x** (`Array`): Input tensor.
+  - **rate** (`float`): Dropout probability.
+  - **training** (`bool`): If True, apply dropout. Set to False for deterministic output after training.
 
 **Returns:**
 
-- `Array`: Tensor with dropout applied.
+  - `Array`: Tensor with dropout applied.
 
-### Function `nn_normalize`
+### <a name="function-nn-normalize"></a>Function `nn_normalize`
 
 Normalize counts per cell and apply log transform.
 
 **Parameters:**
 
-- **x** (`Array`): Count matrix.
-- **target_sum** (`float`): Target total count per cell after normalization.
+  - **x** (`Array`): Count matrix.
+  - **target_sum** (`float`): Target total count per cell after normalization.
 
 **Returns:**
 
-- `Array`: Normalized expression matrix.
+  - `Array`: Normalized expression matrix.
 
-### Function `nn_annotate_init`
+### <a name="function-nn-annotate-init"></a>Function `nn_annotate_init`
 
 Initialize parameters for the cell type annotation network.
 
 **Parameters:**
 
-- **key** (`Array`): PRNG key array for random initialization.
-- **n_genes** (`int`): Number of genes.
-- **n_classes** (`int`): Number of classes.
-- **hidden_dim** (`int`): Dimension of hidden layers.
+  - **key** (`Array`): PRNG key array for random initialization.
+  - **n_genes** (`int`): Number of genes.
+  - **n_classes** (`int`): Number of classes.
+  - **hidden_dim** (`int`): Dimension of hidden layers for attention mechanism.
 
 **Returns:**
 
-- `PyTree[Float[Array, "..."]]`: Dictionary of initialized model parameters.
+  - `PyTree[Float[Array, "..."]]`: Dictionary of initialized model parameters.
 
-### Function `nn_annotate`
+### <a name="function-nn-annotate"></a>Function `nn_annotate`
 
-Annotate cells using a neural attention-based model.
+Annotate cells using instance-based attention neural network.
 
 **Parameters:**
 
-- **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
-- **key** (`Array`): PRNG key array for random number generation.
-- **x** (`Array`): Input gene expression matrix.
-- **dropout_rate** (`float`): Dropout probability.
-- **normalize** (`bool`): If True, normalize and log-transform counts.
-- **target_sum** (`None | float`): Target total count per cell after normalization (defaults to number of genes).
-- **return_attn** (`bool`): If True, also return attention weights.
-- **training** (`bool`): Whether the model is in training mode.
+  - **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
+  - **key** (`Array`): PRNG key array for random number generation.
+  - **x** (`Array`): Input gene expression matrix (batch_size, n_genes).
+  - **dropout_rate** (`float`): Dropout probability (default: 0.5).
+  - **normalize** (`bool`): If True, normalize and log-transform counts (default: True).
+  - **target_sum** (`None | float`): Target total count per cell after normalization (default: 1e4).
+  - **return_attn** (`bool`): If True, also return attention weights (default: False).
+  - **training** (`bool`): Whether the model is in training mode (default: True).
 
 **Returns:**
 
-- `Float[Array, ...] | tuple[Float[Array, ...], Float[Array, ...]]`: Logits. If `return_attn=True`, gene-level attention weights are also returned.
+  - `Float[Array, ...] | tuple[Float[Array, ...], Float[Array, ...]]`: Logits for each class. If `return_attn=True`, gene-level attention weights are also returned as second element.
 
-### Function `nn_annotate_loss`
+### <a name="function-nn-annotate-loss"></a>Function `nn_annotate_loss`
 
 Cross-entropy loss for cell type annotation model.
 
 **Parameters:**
 
-- **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
-- **key** (`Array`): PRNG key array for random number generation.
-- **x** (`Array`): Input gene expression matrix.
-- **y** (`Array`): True cell type labels.
-- **dropout_rate** (`float`): Dropout probability.
-- **normalize** (`bool`): If True, normalize and log-transform counts.
-- **target_sum** (`None | float`): Target total count per cell after normalization (defaults to number of genes).
-- **training** (`bool`): Whether the model is in training mode.
+  - **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
+  - **key** (`Array`): PRNG key array for random number generation.
+  - **x** (`Array`): Input gene expression matrix (batch_size, n_genes).
+  - **y** (`Array`): True cell type labels as integer class indices (batch_size,).
+  - **dropout_rate** (`float`): Dropout probability (default: 0.5).
+  - **normalize** (`bool`): If True, normalize and log-transform counts (default: True).
+  - **target_sum** (`None | float`): Target total count per cell after normalization. Defaults to 1e4 (standard for scRNA-seq).
 
 **Returns:**
 
-- `Float[Array, ...] | tuple[Float[Array, ...], Float[Array, ...]]`: Logits. If `return_attn=True`, gene-level attention weights are also returned.
+  - `Float[Array, ""]`: Scalar cross-entropy loss.
 
-### Function `nn_annotate_evaluate`
+### <a name="function-nn-annotate-evaluate"></a>Function `nn_annotate_evaluate`
 
-Cross-entropy loss for cell type annotation model.
+Evaluate model performance on a batch.
 
 **Parameters:**
 
-- **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
-- **key** (`Array`): PRNG key array for random number generation.
-- **x** (`Array`): Input gene expression matrix.
-- **y** (`Array`): True cell type labels.
-- **dropout_rate** (`float`): Dropout probability.
-- **normalize** (`bool`): If True, normalize and log-transform counts.
-- **target_sum** (`None | float`): Target total count per cell after normalization (defaults to number of genes).
+  - **params** (`PyTree[Float[Array, "..."]]`): Model parameters from `nn_annotate_init`.
+  - **key** (`Array`): PRNG key array for random number generation.
+  - **x** (`Array`): Input gene expression matrix (batch_size, n_genes).
+  - **y** (`Array`): True cell type labels as integer class indices (batch_size,).
+  - **dropout_rate** (`float`): Dropout probability (default: 0.5).
+  - **normalize** (`bool`): If True, normalize and log-transform counts (default: True).
+  - **target_sum** (`None | float`): Target total count per cell after normalization. Defaults to 1e4 (standard for scRNA-seq).
 
 **Returns:**
 
-- `tuple[float, int, int]`: Loss, total number of labels, and number of correct labels
+  - `tuple[Float[Array, ""], Int[Array, ""], Int[Array, ""]]`: Tuple of (loss, total_samples, correct_predictions).
 
-## `opt.py`
+## <a name="modelpredictpy"></a>File: `model/predict.py`
 
-### Class `AdamState`
+### <a name="function--get-gene-indices"></a>Function `_get_gene_indices`
 
-State for the Adam optimizer.
+Map model gene names to indices within the AnnData object.
+
+**Parameters:**
+
+  - **adata** (`AnnData`): The single-cell data object.
+  - **gene_names** (`np.ndarray`): Array of gene names expected by the model in a specific order.
+  - **gene_key** (`str | None`): Column name in `adata.var` containing gene names. If None, uses `adata.var_names`.
+
+**Returns:**
+
+  - `available_idx`: np.ndarray The integer indices of genes found in `adata` that match the model's expected genes. out_positions : np.ndarray The corresponding positions in the model's input vector where these genes belong.
+
+### <a name="function-annotate-iter"></a>Function `annotate_iter`
+
+Batch iterator that handles gene reordering and zero-padding for missing genes.
+
+**Parameters:**
+
+  - **adata** (`AnnData`): The single-cell data object.
+  - **gene_names** (`np.ndarray`): Ordered gene names from the trained model.
+  - **gene_key** (`str | None`): Column in `adata.var` to use for gene matching.
+  - **layer** (`str | None`): Key in `adata.layers` to use for counts. If None, uses `adata.X`.
+  - **batch_size** (`int`): Number of cells to process per batch.  Yields ------
+  - **batch_tensor** (`jax.numpy.ndarray`): A JAX-compatible array of shape (batch_size, n_model_genes).
+  - **start** (`int`): Starting observation index.
+  - **end** (`int`): Ending observation index.
+
+### <a name="function-classify"></a>Function `classify`
+
+Annotate single-cell sequencing data using a trained ginseng classifier.
+
+**Parameters:**
+
+  - **model_state** (`GinsengClassifierState | str | Path`): A loaded GinsengClassifierState or a path to a saved state file.
+  - **adata** (`AnnData | str | Path`): AnnData object or path to count data (.h5ad, .h5, or Matrix Market).
+  - **gene_key** (`str | None`): Column in `.var` containing gene names. If None, uses index.
+  - **layer** (`str | None`): Key in `adata.layers` to use for counts. If None, uses `adata.X`.
+  - **backed** (`bool`): If True and `adata` is a path, reads data in backed mode.
+  - **normalize** (`bool | None`): Override model normalization setting.
+  - **target_sum** (`float | None`): Override model target sum.
+  - **randomness** (`bool`): If True, enables dropout during inference.
+  - **batch_size** (`int`): Number of cells to process in each forward pass.
+  - **copy** (`bool`): If True, returns a modified copy of the AnnData object.
+  - **store_probs** (`bool`): If True, stores the full probability matrix in `adata.obsm`.
+  - **return_table** (`bool`): If True, returns a pandas DataFrame instead of modifying AnnData.
+  - **seed** (`int`): Random seed.
+  - **silent** (`bool`): If True, suppresses progress bar and warnings.
+
+**Returns:**
+
+  - `AnnData | pd.DataFrame | None`: Returns a DataFrame if `return_table` is True, a copy of AnnData if `copy` is True, otherwise modifies in-place and returns None.
+
+## <a name="modelstatepy"></a>File: `model/state.py`
+
+### <a name="class-ginsengclassifierstate"></a>Class `GinsengClassifierState`
+
+Complete state of a trained Ginseng model.
+
+All information needed to save, load, and use a trained model.
 
 **Attributes:**
 
-  - **step** (`int`): Current optimization step.
-  - **m** (`PyTree of Array`): Exponential moving average of gradients.
-  - **v** (`PyTree of Array`): Exponential moving average of squared gradients.
+  - **params** (`PyTree`): Model parameters (weights and biases).
+  - **genes** (`np.ndarray`): Gene names in the exact order expected by the model.
+  - **label_keys** (`np.ndarray`): Label names (e.g., ['T-cell', 'B-cell', 'Macrophage']).
+  - **label_values** (`np.ndarray`): Integer values corresponding to each label (e.g., [0, 1, 2]).
+  - **n_genes** (`int`): Number of genes.
+  - **n_classes** (`int`): Number of classes.
+  - **hidden_dim** (`int`): Hidden dimension used in attention mechanism.
+  - **normalize** (`bool`): Whether input data should be normalized.
+  - **target_sum** (`float`): Target sum for normalization.
+  - **dropout_rate** (`float`): Dropout rate used during training.
+  - **training** (`bool`): Whether weights should be frozen (False after training).
 
-### Function `opt_init_adam`
+### <a name="function-classifier-from-state"></a>Function `classifier_from_state`
 
-Initialize Adam optimizer state.
-
-**Parameters:**
-
-- **params** (`PyTree[Float[Array, ...]]`): Model parameters to be optimized.
-
-**Returns:**
-
-- `AdamState`: Initial optimizer state with zeroed moments.
-
-### Function `opt_adam_update`
-
-Perform one Adam optimization step.
+Create a GinsengClassifier from a loaded state.
 
 **Parameters:**
 
-- **grads** (`PyTree[Float[Array, ...]]`): Gradients of the loss w.r.t. parameters.
-- **params** (`PyTree[Float[Array, ...]]`): Current model parameters.
-- **state** (`AdamState`): Current optimizer state.
-- **lr** (`float`): Learning rate.
-- **betas** (`tuple[float, float]`): Exponential decay rates for first and second moment estimates.
-- **eps** (`float`): Numerical stability constant.
-- **weight_decay** (`float`): L2 regularization factor.
+  - **state** (`GinsengClassifierState`): Loaded model state.
 
 **Returns:**
 
-- `tuple`: Updated parameters and new optimizer state.
+  - `GinsengClassifier`: Model ready for inference.
 
-## `train.py`
+### <a name="function-state-from-classifier-trainer"></a>Function `state_from_classifier_trainer`
 
-### Class `GinsengTrainerSettings`
+Create a GinsengClassifierState from a trainer after .fit().
 
-Training configuration settings for `GinsengTrainer`.
+**Parameters:**
 
-**Attributes:**
+  - **trainer** (`GinsengClassifierTrainer`): Trainer instance with a trained model.
 
-  - **rate** (`float | None`): Probability of randomly masking input counts.
-  - **lam_max** (`float | None`): Maximum mean of Poisson distribution for randomly adding counts.
-  - **lower** (`int | None`): Minimum number of genes to randomly mask out.
-  - **upper** (`int | None`): Maximum number of genes to randomly mask out.
-  - **hidden_dim** (`int`): Number of hidden dimensions.
-  - **dropout_rate** (`float`): Dropout probability applied during training.
-  - **batch_size** (`int`): Number of samples per training batch.
-  - **lr** (`float`): Learning rate for Adam optimizer.
-  - **betas** (`tuple[float, float]`): Exponential decay rates for first and second moment estimates for ADam optimizer.
-  - **eps** (`float`): Numerical stability constant for Adam optimizer.
-  - **weight_decay** (`float`): L2 regularization factor for Adam optimizer.
-  - **normalize** (`bool`): Whether to normalize the input count data.
-  - **target_sum** (`float`): Target sum used for data normalization.
-  - **holdout_fraction** (`float`): Fraction of the dataset to hold out for validation.
-  - **balance_train** (`bool`): Whether to balance training samples across classes.
-  - **group_level** (`bool`): Whether to apply grouping at the group level.
-  - **group_mode** (`str`): Strategy for handling group balancing ('fraction' or 'loo').
-  - **seed** (`int`): Random seed for reproducibility.
+**Returns:**
 
-### Class `GinsengLogger`
+  - `GinsengClassifierState`: Complete model state.
+
+**Examples:**
+
+```python
+>>> trainer = GinsengClassifierTrainer(dataset, settings)
+>>> trainer.fit(epochs=50)
+>>> state = state_from_trainer(trainer)
+>>> save_model(state, "./models/my_classifier.h5")
+```
+
+## <a name="trainaugmentpy"></a>File: `train/augment.py`
+
+### <a name="function-augment-mask"></a>Function `augment_mask`
+
+Randomly mask out counts across cells.
+
+**Parameters:**
+
+  - **key** (`Array`): PRNG key array for dropout mask.
+  - **x** (`Array`): Input tensor.
+  - **rate** (`float`): Dropout probability.
+
+**Returns:**
+
+  - `Array`: Tensor with dropout applied.
+
+### <a name="function-augment-background"></a>Function `augment_background`
+
+Randomly add Poisson-distributed background noise to counts.
+
+**Parameters:**
+
+  - **key** (`Array`): PRNG key array for noise generation.
+  - **x** (`Array`): Non-normalized count matrix.
+  - **lam_max** (`float`): Maximum mean of Poisson distribution for sampling added noise.
+
+**Returns:**
+
+  - `Array`: Counts with added Poisson noise.
+
+### <a name="function-augment-dropgene"></a>Function `augment_dropgene`
+
+Randomly zero out entire genes.
+
+**Parameters:**
+
+  - **key** (`Array`): PRNG key array for mask generation.
+  - **x** (`Array`): Count matrix.
+  - **lower** (`int`): Minimum number of genes to mask out.
+  - **upper** (`int`): Maximum (exclusive) number of genes to mask out.
+
+**Returns:**
+
+  - `Array`: Filtered counts.
+
+### <a name="function-augment"></a>Function `augment`
+
+Apply a combination of single-cell RNA relevant augmentations.
+
+**Parameters:**
+
+  - **key** (`Array`): PRNG key array for mask generation.
+  - **x** (`Array`): Count matrix.
+  - **rate** (`float`): Dropout probability.
+  - **lam_max** (`float`): Maximum mean of Poisson distribution for sampling added noise.
+  - **lower** (`int`): Minimum number of genes to mask out.
+  - **upper** (`int`): Maximum (exclusive) number of genes to mask out.
+
+**Returns:**
+
+  - `Array`: Augmented counts.
+
+## <a name="trainloggerpy"></a>File: `train/logger.py`
+
+### <a name="class-ginsenglogger"></a>Class `GinsengLogger`
 
 Logger for storing training and validation metrics across epochs.
 
@@ -562,75 +645,126 @@ Logger for storing training and validation metrics across epochs.
   - **holdout_loss** (`list[float]`): Holdout loss values for each epoch.
   - **holdout_accuracy** (`list[float]`): Holdout accuracy values for each epoch.
 
-#### Method `update`
+#### <a name="method-update"></a>Method `update`
 
 Update the logger with new training and validation metrics.
 
 **Parameters:**
 
-- **epoch** (`int`): Current epoch index.
-- **train_loss** (`float`): Training loss at this epoch.
-- **holdout_loss** (`float`): Validation loss at this epoch.
-- **holdout_accuracy** (`float`): Validation accuracy at this epoch.
+  - **epoch** (`int`): Current epoch index.
+  - **train_loss** (`float`): Training loss at this epoch.
+  - **holdout_loss** (`float`): Validation loss at this epoch.
+  - **holdout_accuracy** (`float`): Validation accuracy at this epoch.
 
-#### Method `report`
+#### <a name="method-report"></a>Method `report`
 
 Print most recent result to standard output.
 
 **Parameters:**
 
-- **silent** (`bool`): If True, suppresses report output.
-- **flush** (`bool`): If True, write report to output immediately.
+  - **silent** (`bool`): If True, suppresses report output.
+  - **flush** (`bool`): If True, write report to output immediately.
 
 **Returns:**
 
-- `None`: Output is printed to standard output.
+  - `None`: Output is printed to standard output.
 
-### Class `GinsengModelState`
+## <a name="trainoptpy"></a>File: `train/opt.py`
 
-State of the Ginseng model, including parameters and metadata.
+### <a name="class-adamstate"></a>Class `AdamState`
+
+State for the Adam optimizer.
 
 **Attributes:**
 
-  - **params** (`PyTree`): Model parameters.
-  - **genes** (`np.ndarray`): Gene names used during model training.
-  - **label_keys** (`np.ndarray`): Keys denoting integer identifier for each label.
-  - **label_values** (`np.ndarray`): Values denoting original string/integer identifiers for each label.
-  - **normalize** (`bool`): If True, model was trained on normalized data
-  - **target_sum** (`float`): Target sum used for normalization.
-  - **dropout_rate** (`float`): Dropout probability applied during training.
-  - **training** (`bool`): If True, model weighted should not be frozen.
+  - **step** (`int`): Current optimization step.
+  - **m** (`PyTree of Array`): Exponential moving average of gradients.
+  - **v** (`PyTree of Array`): Exponential moving average of squared gradients.
 
-### Function `GinsengTrainer`
+### <a name="function-opt-init-adam"></a>Function `opt_init_adam`
 
-Train a neural network classiifier on a `GinsengDataset`.
+Initialize Adam optimizer state.
 
 **Parameters:**
 
-- **dataset** (`GinsengDataset | str`): GinsengDataset or path to GinsengDataset
-- **settings** (`GinsengTrainerSettings`): Training configuration including model, optimization, and augmentation parameters.
-- **epochs** (`int`): Number of training epochs to run.
-- **silent** (`bool`): If True, suppresses training progress output.
+  - **params** (`PyTree[Float[Array, ...]]`): Model parameters to be optimized.
 
 **Returns:**
 
-- `tuple[GinsengLogger, GinsengModelState]`: Training log with loss and accuracy metrics across epochs, and the final trained model state including parameters and metadata.
+  - `AdamState`: Initial optimizer state with zeroed moments.
 
-## `utils.py`
+### <a name="function-opt-adam-update"></a>Function `opt_adam_update`
 
-### Function `compute_hvgs`
-
-Select highly variable genes.
+Perform one Adam optimization step.
 
 **Parameters:**
 
-- **data** (`AnnData`): AnnData object with gene names stored in `var`.
-- **n_top_genes** (`int`): Number of top highly variable genes to select.
-- **min_mean** (`float`): Lower bound on mean gene expression for selecting highly variable genes.
-- **max_mean** (`float`): Upper bound on mean gene expression for selecting highly variable genes.
-- **n_bins** (`int`): Select genes across this many gene expression bins.
-- **copy** (`bool`): If True, return a copy of the AnnData.
+  - **grads** (`PyTree[Float[Array, ...]]`): Gradients of the loss w.r.t. parameters.
+  - **params** (`PyTree[Float[Array, ...]]`): Current model parameters.
+  - **state** (`AdamState`): Current optimizer state.
+  - **lr** (`float`): Learning rate.
+  - **betas** (`tuple[float, float]`): Exponential decay rates for first and second moment estimates.
+  - **eps** (`float`): Numerical stability constant.
+  - **weight_decay** (`float`): L2 regularization factor.
 
 **Returns:**
 
-- `None`: Marks highly variable genes in `var` in-place. Or if copy=True, then returns a copy of the AnnData.
+  - `tuple`: Updated parameters and new optimizer state.
+
+## <a name="traintrainerpy"></a>File: `train/trainer.py`
+
+### <a name="class-ginsengclassifiertrainersettings"></a>Class `GinsengClassifierTrainerSettings`
+
+Training configuration settings for `GinsengClassifierTrainer`.
+
+### <a name="class-ginsengclassifiertrainer"></a>Class `GinsengClassifierTrainer`
+
+Trainer class for orchestrating the training of a GinsengClassifier.
+
+#### <a name="method--train-step"></a>Method `_train_step`
+
+Internal training step to update parameters.
+
+#### <a name="method-fit"></a>Method `fit`
+
+Execute the training loop.
+
+**Parameters:**
+
+  - **epochs** (`int`): Number of training epochs to run (default : 10).
+  - **silent** (`bool`): If True, suppresses training progress output (default : False).
+
+**Returns:**
+
+  - `GinsengClassifier`: The trained classifier with updated parameters.
+
+#### <a name="method--run-epoch"></a>Method `_run_epoch`
+
+Run a single training epoch.
+
+#### <a name="method--validate"></a>Method `_validate`
+
+Run validation on the holdout split.
+
+## <a name="utilshvgpy"></a>File: `utils/hvg.py`
+
+### <a name="function-select-hvgs"></a>Function `select_hvgs`
+
+Select highly variable genes from raw or normalized counts.
+
+**Parameters:**
+
+  - **adata** (`AnnData`): AnnData object with gene names stored in `var`.
+  - **n_top_genes** (`int`): Number of top highly variable genes to select.
+  - **layer** (`str, optional`): Key in `adata.layers` to use. If None, uses `adata.X`.
+  - **target_sum** (`float, optional`): If provided, scales each cell to this sum and applies log1p transformation (default: 1e4).
+  - **min_mean** (`float`): Lower quantile bound on mean gene expression.
+  - **max_mean** (`float`): Upper quantile bound on mean gene expression.
+  - **n_bins** (`int`): Select genes across this many gene expression bins.
+  - **chunk_size** (`int`): Number of cells to process in memory at once.
+  - **silent** (`bool`): If True, suppresses progress bar.
+  - **copy** (`bool`): If True, returns a copy of the AnnData.
+
+**Returns:**
+
+  - `Optional[AnnData]`: Marks highly variable genes in `var['ginseng_genes']`.

@@ -1,243 +1,170 @@
-# Basic usage
+# Usage
 
-## `data`
+## `GinsengDataset`
 
-`ginseng` uses `zarr` stores for efficient storage and retrieval of single-cell count data. This makes it easy to cache, split, and iterate over data for training models.
+`GinsengDataset` is the core object for training single-cell annotation models in `ginseng`.
+It is designed to convert large single-cell datasets (from `.h5ad`, 10x, or
+URLs) into a compressed on-disk `zarr` store for training. This allows for
+memory-efficient training by streaming mini-batches without loading the entire
+dataset into RAM.
 
-### Preparing a `GinsengDataset`
+### Creating a `GinsengDataset`
 
-We can create a `GinsengDataset` by providing a list of gene names or, alternatively, a column in `adata.obs` that specifies which genes to include in our dataset (i.e. a boolean mask). These genes will then be subset during the construction of a `GinsengDataset`. 
-
-!!! warning
-    `ginseng` expects raw, unnormalized counts, so make sure to double check when creating a `GinsengDataset`.
-
-
-Below we provide an example of creating a `GinsengDataset` using randomly assigned genes.
+To convert your raw counts into a `GinsengDataset`, the `create` class method can be used. The `.create` method handles gene subsetting, label encoding, and disk serialization.
 
 ```python
-import numpy as np
-from ginseng.io import read_adata
 from ginseng.data import GinsengDataset
 
-# Load your single-cell count data
-adata = read_adata("adata.h5ad")
-
-# Define which genes to include (boolean mask in adata.var)
-adata.var["include_genes"] = np.random.randint(0, 2, size=len(adata.var)).astype(bool)
-
-# Create a GinsengDataset and save it as a zarr store
-GinsengDataset.create(
-    "ginseng.zarr",
-    adata,
-    labels="cell_type",
-	gene_key="gene_symbol"
-    gene_mask=adata.var.include_genes,
+# Create a dataset from an existing AnnData object or path
+ds = GinsengDataset.create(
+    path="my_dataset.zarr",          # Output directory
+    adata="path/to/counts.h5ad",     # Input data (Path, URL, or AnnData)
+    label_key="cell_type",           # Target labels in adata.obs
+    layer="counts",                  # Optional: specify a layer (e.g., raw counts)
+    genes="highly_variable",         # Optional: use a mask in adata.var
+    group_key="batch"                # Optional: metadata for stratified splitting
 )
 ```
 
-`GinsengDataset` also lets you specify a `group` argument when creating the dataset. By setting `group`, you can ensure that cells from the same group are not split across the training and validation sets. For example, in the code below, we set `group="donor_id"`, which ensures that all cells from a given donor are kept entirely within either the training or validation split.
+### Loading an existing `GinsengDataset`
+
+If you have already created a `GinsengDataset` and saved it to disk, you can load it directly by providing the path to the `zarr` store.
 
 ```python
-# Create a GinsengDataset with additional group information for downstream splitting
-GinsengDataset.create(
-    "ginseng.zarr",
-    adata,
-	labels="cell_type",
-	gene_key="gene_symbol"
-    gene_mask=adata.var.include_genes,
-	groups="donor_id",
-)
+# Load an existing dataset from disk
+ds = GinsengDataset("dataset.zarr")
 ```
 
-Since a `GinsengDataset` is just a `zarr` array, the array's chunk size will dictate I/O speeds. By default, `GinsengDataset` will set the chunk size to (`256`, number of genes). However, if you know what batch size you will use during training, then setting chunk size to `batch_size` will lead to the fastest/most efficient reading as chunks won't overlap.
+### Initializing train/test splits
+
+Once the Zarr store is created, you can define your data splits. Ginseng stores
+these indices inside the Zarr group so they persist across sessions.
 
 ```python
-# If you know your batch size in advance, manually set chunk size to optimize throughput
-GinsengDataset.create(
-    "ginseng.zarr",
-    adata,
-	labels="cell_type",
-	gene_key="gene_symbol"
-    gene_mask=adata.var.include_genes,
-	chunk_size=128 # Or, (128, sum(adata.var.include_genes))
-)
+# Create a 90/10 train/test split
+ds.make_split(fraction=0.1, stratify_group=True)
 ```
 
-!!! tip
-    `GinsengDataset` is compatible with the backed mode of AnnData objects. This allows you to create large datasets efficiently by loading data from disk as needed, rather than reading the entire dataset into memory.
+If you used `group_key` when creating the `GinsengDataset`, then setting
+`stratify_group=True` will ensure that all cells from the same group instance
+(e.g. batch, donor, etc.) are kept together in either the training or test set.
 
-### Working with a `GinsengDataset`
+### Streaming mini-batches
 
-Once a `GinsengDataset` has been created, it can be reloaded at any time while remaining memory efficient, since only the required chunks are read into memory. `GinsengDataset` also supports flexible batching, optional label balancing, and automatic train/holdout splitting.
+The stream method provides a python iterator that yields jax/numpy compatible arrays. This is where the on-disk performance provides major benefits as only the required chunks are decompressed during iteration.
 
 ```python
-import numpy as np
-from ginseng.data import GinsengDataset
-
-rng = np.random.default_rng(123)
-
-# Load the cached dataset from disk
-dataset = GinsengDataset("ginseng.zarr")
-
-# Iterate through all samples in batches
-for x, y in dataset.iter_batches(batch_size=1, shuffle=False, rng=rng):
-    _ = x * x  # your model logic here
-
-# Create a holdout split (e.g., for validation)
-dataset.make_holdout(holdout_fraction=0.2)
-
-# Iterate through the training set
-for x, y in dataset.iter_batches(batch_size=1, shuffle=True, split="train", rng=rng):
-    _ = x * x
-
-# Iterate through the training set with label balancing
-for x, y in dataset.iter_batches(
-    batch_size=1,
-    shuffle=True,
-    split="train",
-    balance_train=True,
-	rng=rng
-):
-    _ = x * x
-
-# Iterate through the holdout set
-for x, y in dataset.iter_batches(batch_size=1, shuffle=False, split="holdout", rng=rng):
-    _ = x * x
-	
-# If `groups` were provided, force unique groups not to appear in both train and holdout
-dataset.make_holdout(holdout_fraction=0.2, group_level=True)
-
-# If `groups` were provided, leave only one group out in the holdout
-dataset.make_holdout(holdout_fraction=0.2, group_level=True, group_mode="loo")
+# Stream mini-batches for training
+for X_batch, y_batch in ds.stream(batch_size=256, split="train", shuffle=True, balance_labels=True):
+    # X_batch shape: (256, n_genes)
+    # y_batch shape: (256,)
+    # Perform training step here...
+    pass
 ```
 
-## `train`
+The `stream` method supports shuffling, different splits (`train`, `test`, or
+`all`), adjustable batch sizes, and can also enforce balanced sampling of
+labels during training.
 
-`ginseng` provides a simple interface for training a lightweight neural attention model for cell type annotation.
+## `GinsengClassifier`
 
-### Training a model with `GinsengTrainer`
+Training cell type annotation models in `ginseng` is managed by the
+`GinsengClassifierTrainer`. This class handles the `jax`-based optimization
+loop, handles on-the-fly data augmentation, and manages model evaluation on
+holdout splits.
 
-Given a `GinsengDataset`, end-to-end training and logging for cell type annotation can be achieved using `GinsengTrainerSettings` and `GinsengTrainer`.
+### Setting training parameters
+
+A `GinsengClassifier` can be trained using a variety of model, optimization,
+and augmentation hyperparameters. These can be set using the
+`GinsengClassifierTrainerSettings` class.
 
 ```python
-from ginseng.train import GinsengTrainerSettings, GinsengTrainer
+from ginseng.train import GinsengClassifierTrainerSettings
 
-# Specify a variety of training settings if desired
-settings = GinsengTrainerSettings(
-	# Augmentation
-	rate=0.1,
-    lam_max=0.05,
+settings = GinsengClassifierTrainerSettings(
+    # Augmentation parameters
+    rate=0.1,
+    lam_max=None,
     lower=0,
-    upper=20,
+    upper=200,
 
-    # Model
-    hidden_dim=256,
-    dropout_rate=0.25,
-
-    # Optimization
+    # Model parameters
+    hidden_dim=64,
+    dropout_rate=0.2,
     batch_size=128,
+
+    # Training parameters
     lr=0.001,
     betas=(0.9, 0.999),
     eps=1e-8,
     weight_decay=0.01,
-
-    # Data
     normalize=True,
     target_sum=1e4,
-    holdout_fraction=0.2,
+    holdout_fraction=0.05,
     balance_train=True,
     group_level=False,
     group_mode="fraction",
 
-    # Randomness
-    seed=1
-)
-
-# Train a model
-logger, model_state = GinsengTrainer(
-	dataset,
-	settings,
-	epochs=10,
-	silent=False
+    # Random seed for reproducibility
+    seed=123
 )
 ```
 
-Of note, `ginseng` implements a variety of optional data augmentations during training. These include:
+### Training a model
 
-- Cell-wise dropout/masking (randomly setting individual counts to zero at rate `rate`)
-- Random addition of Poisson counts ($\lambda \in$ [0, `lam_max`]) to simulate background RNA
-- Gene-wise masking, in which up to `g` genes are randomly zeroed per batch to mimic sparsity or a reduced gene panel.
-
-While these augmentations don't perfectly match the apparent statistical properties of sc/snRNA data, they add additional variation that helps the model generalize (e.g. in cases where genes in the training set may be missing during prediction, or in cases where the distribution of ambient/background RNAis different from the unaugmented training data).
-
-### Saving and loading a model trained with `GinsengTrainer`
-
-The ability to perform annotation on new datasets requires information on (1) which genes were used during training (and their order), (2) the normalization and transformations applied to the data, and (3) the model weights. As such, `ginseng` provides functions to serialize and deserialize all this "model state" information as necessary. (Note that the state is currently saved in a portable `hdf5` format, but this may change in the future to improve compression/reduce size.)
+Once you've specified your dataset and training parameters, you can initialize a `GinsengClassifierTrainer` to begin training.
 
 ```python
-from ginseng.io import save_ginseng_state, load_ginseng_state
+from ginseng.train import GinsengClassifierTrainer
 
-# Save a trained ginseng model
-save_ginseng_state(model_state, "ginseng.state.hdf5"))
+# Initialize trainer
+trainer = GinsengClassifierTrainer(dataset, settings)
 
-# Load a trained ginseng model
-model_state = load_ginseng_state(model_state, "ginseng.state.hdf5")
+# Fit the model
+model, state = trainer.fit(epochs=10)
 ```
 
-## `annotate`
+After training, the `fit` method returns the trained model and its state, which can be used for inference or saved to disk.
 
-### Annotating new data with a trained `ginseng` model
+### Saving and loading model state
 
-If you've trained a model, annotation is simple. Just load your model state and provide an `AnnData` object or path to count data, and there you go. For optimal speed, you can tune batch size, but in most cases annotation should be fast (even for hundreds of thousands of cells). For more details on additional arguments, check the docs/docstring.
+The model state can be saved to disk for later use or inference.
 
 ```python
-from ginseng.annotate import GinsengAnnotate
+from ginseng.data.io import save_model, load_model
 
-GinsengAnnotate(
-    model_state,
-    adata, # Or path to 10x matrix market data, .h5 file, or .h5ad file
-    gene_key="gene_symbol",
-    batch_size=256,
-)
+# Save model state
+save_model(state, "model.h5")
 
-# Get cell type labels
-cell_types = adata.obs["ginseng_cell_type"].values
+# Load model state
+loaded_state = load_model("model.h5")
 ```
 
-If you want to just access the probability (softmax) for each cell type label per cell, you can instead use the `return_probs` argument.
+## Annotating new data
+
+Once you have trained a model, you can either directly use the model on new
+data by iterating over the dataset. However, the recommended approach is to use
+the `ginseng.classify` function, which uses the model state to correctly
+subset, order, and account for missing genes. Furthermore, it's optimized to work
+with backed AnnData objects which makes it easy to annotate large datasets without
+having to load everything into memory.
 
 ```python
-cell_probs = GinsengAnnotate(
-    model_state,
-    adata,
-    gene_key="gene_symbol",
-    batch_size=256,
-    return_probs=True
-)
+import ginseng
+from ginseng.data.io import read_adata, load_model
 
-# Get most probable cell type label
-cell_probs["cell_type"] = cell_probs.idxmax(axis=1)
-```
+# Load model
+state = load_model("model.h5")
 
+# Load AnnData
+adata = read_adata("data.h5ad")
 
-## `io`
+# Classify new data in-place
+ginseng.classify(data, state, layer="counts")
+assert "ginseng_cell_type" in adata.obs
+assert "ginseng_confidence" in adata.obs
 
-### Reading count data
-
-`ginseng` provides a variety of functions to read single-cell count data such as 10x matrix market format, 10x h5, or AnnData objects.
-
-```python
-from ginseng.io import read_10x_mtx, read_10x_h5, read_adata
-
-# Load 10x matrix market data
-adata = read_10x_mtx("counts/")
-
-# Load 10x h5 data
-adata = read_10x_h5("counts.h5")
-
-# Load AnnData object (anndata package)
-adata = read_10x_h5("counts.h5")
-
-# Load AnnData object backed (anndata package)
-adata = read_10x_h5("counts.h5", backed="r")
+# Return predictions as a separate table
+predictions = ginseng.classify(data, state, layer="counts", return_table=True)
 ```

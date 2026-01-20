@@ -1,6 +1,6 @@
 # Copyright (c) 2025, Tom Ouellette
 # Licensed under the MIT License
 
-from ginseng.model.predict import classify
+from .dataset import GinsengDataset
 
-__all__ = ["classify"]
+__all__ = ["GinsengDataset"]

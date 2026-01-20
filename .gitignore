@@ -1,4 +1,5 @@
 # Miscellaneous
+tutorials/
 .DS_Store
 **/.DS_Store
 temp/
@@ -14,6 +15,9 @@ bench/
 mkdocs.yml
 *.swp
 data/
+!src/ginseng/data/
+src/tests/_fixtures/
+!src/tests/data/
 
 /target
 
