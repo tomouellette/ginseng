@@ -65,7 +65,7 @@ def classifier_from_state(state: GinsengClassifierState) -> "GinsengClassifier":
     GinsengClassifier
         Model ready for inference.
     """
-    from ginseng.model.nn import GinsengClassifier
+    from ginseng.model.instance import GinsengClassifier
 
     model = GinsengClassifier(
         n_genes=state.n_genes,

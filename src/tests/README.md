@@ -1,6 +1,6 @@
 # tests
 
-**Last Run:** 2026-01-20 13:57:27  
+**Last Run:** 2026-01-28 16:58:17  
 
 ```text
 src/tests/data/test_dataset.py::TestDatasetCreation::test_dataset_exists_on_disk                  PASSED     [  1%]
@@ -45,19 +45,19 @@ src/tests/data/test_io.py::TestModelStateIO::test_state_gene_order_preserved    
 src/tests/data/test_io.py::TestModelStateIO::test_state_label_mapping                             PASSED     [ 51%]
 src/tests/data/test_io.py::TestModelStateIO::test_state_file_extension_handling                   PASSED     [ 52%]
 src/tests/data/test_io.py::TestModelStateIO::test_load_nonexistent_file                           PASSED     [ 53%]
-src/tests/model/test_nn.py::TestNN::test_xavier_uniform_shape                                     PASSED     [ 55%]
-src/tests/model/test_nn.py::TestNN::test_nn_init_linear                                           PASSED     [ 56%]
-src/tests/model/test_nn.py::TestNN::test_nn_linear_forward                                        PASSED     [ 57%]
-src/tests/model/test_nn.py::TestNN::test_nn_dropout_eval_mode                                     PASSED     [ 58%]
-src/tests/model/test_nn.py::TestNN::test_nn_dropout_zero_rate                                     PASSED     [ 60%]
-src/tests/model/test_nn.py::TestDataProcessing::test_nn_normalize                                 PASSED     [ 61%]
-src/tests/model/test_nn.py::TestModelFunctions::test_nn_annotate_shapes                           PASSED     [ 62%]
-src/tests/model/test_nn.py::TestModelFunctions::test_nn_annotate_with_attention                   PASSED     [ 64%]
-src/tests/model/test_nn.py::TestModelFunctions::test_nn_annotate_loss                             PASSED     [ 65%]
-src/tests/model/test_nn.py::TestGinsengClassifier::test_classifier_init                           PASSED     [ 66%]
-src/tests/model/test_nn.py::TestGinsengClassifier::test_classifier_key_management                 PASSED     [ 67%]
-src/tests/model/test_nn.py::TestGinsengClassifier::test_classifier_predict                        PASSED     [ 69%]
-src/tests/model/test_nn.py::TestGinsengClassifier::test_classifier_evaluate                       PASSED     [ 70%]
+src/tests/model/test_instance.py::TestNN::test_xavier_uniform_shape                               PASSED     [ 55%]
+src/tests/model/test_instance.py::TestNN::test_nn_init_linear                                     PASSED     [ 56%]
+src/tests/model/test_instance.py::TestNN::test_nn_linear_forward                                  PASSED     [ 57%]
+src/tests/model/test_instance.py::TestNN::test_nn_dropout_eval_mode                               PASSED     [ 58%]
+src/tests/model/test_instance.py::TestNN::test_nn_dropout_zero_rate                               PASSED     [ 60%]
+src/tests/model/test_instance.py::TestDataProcessing::test_nn_normalize                           PASSED     [ 61%]
+src/tests/model/test_instance.py::TestModelFunctions::test_nn_annotate_shapes                     PASSED     [ 62%]
+src/tests/model/test_instance.py::TestModelFunctions::test_nn_annotate_with_attention             PASSED     [ 64%]
+src/tests/model/test_instance.py::TestModelFunctions::test_nn_annotate_loss                       PASSED     [ 65%]
+src/tests/model/test_instance.py::TestGinsengClassifier::test_classifier_init                     PASSED     [ 66%]
+src/tests/model/test_instance.py::TestGinsengClassifier::test_classifier_key_management           PASSED     [ 67%]
+src/tests/model/test_instance.py::TestGinsengClassifier::test_classifier_predict                  PASSED     [ 69%]
+src/tests/model/test_instance.py::TestGinsengClassifier::test_classifier_evaluate                 PASSED     [ 70%]
 src/tests/model/test_predict.py::TestClassifyFunction::test_classify_inplace_updates              PASSED     [ 71%]
 src/tests/model/test_predict.py::TestClassifyFunction::test_classify_return_table                 PASSED     [ 73%]
 src/tests/model/test_predict.py::TestClassifyLayers::test_classify_from_layer                     PASSED     [ 74%]

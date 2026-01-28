@@ -1,4 +1,6 @@
-# Usage
+# Cell type annotation
+
+Below we describe the general workflow for training and applying cell type annotation models in `ginseng`. For a more application-focused introduction, please see some of the tutorials.
 
 ## `GinsengDataset`
 

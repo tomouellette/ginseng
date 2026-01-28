@@ -1,4 +1,4 @@
-# Training a model to annotate new data
+# Annotating cell types with ginseng
 
 In this tutorial, we provide a step-by-step guide on how to train a `ginseng` model, and how to use it to annotate new data. We will use single-cell RNA-seq data from human uterine tissue for this example.
 
@@ -171,7 +171,7 @@ UserWarning: Partial gene overlap detected: 99.92%.
 The predicted cell type labels from `ginseng.classify` can be found in the `ginseng_cell_type` column of the AnnData `obs` dataframe. Additionaly, the maximum predicted probability for each cell is stored in the `ginseng_confidence` column, which can be used to filter low-confidence predictions.
 
 !!! note
-    Any time there isn't a perfect overlap between the gene sets in the training and test sets, `ginseng` will provide a warning specifying the fraction of overlapping genes. However, `ginseng` will automatically handle missing genes by inserting zero-valued columns for those genes during inference. To train a model robust to missing genes, it is recommended to use dropout on the input layer during training (`rate` > 0) and allow complete masking of genes during training (from `lower` to `upper`).
+    Any time there isn't a perfect overlap between the genes used during training and a newly annotated dataset, `ginseng` will provide a warning specifying the fraction of overlapping genes. However, `ginseng` will automatically handle missing genes by inserting zero-valued columns for those genes during inference. To train a model robust to missing genes, it is recommended to use dropout on the input layer during training (`rate` > 0) and allow complete masking of genes during training (from `lower` to `upper`).
 
 
 ### Evaluate performance

@@ -74,7 +74,7 @@ class GinsengLogger:
 
         if has_holdout:
             msg += f"Holdout loss: {self.holdout_loss[-1]:.3e} | "
-            msg += f"Holdout accuracy: {self.holdout_accuracy[-1]:.3e} |"
+            msg += f"Holdout metric: {self.holdout_accuracy[-1]:.3e} |"
 
         if has_train or has_holdout:
             print(msg, flush=flush)

@@ -11,10 +11,10 @@ import math
 from anndata import AnnData
 from pathlib import Path
 from tqdm import tqdm
-from typing import Union, Iterator, Tuple, Optional
+from typing import Union, Iterator, Tuple
 
 from ginseng.data.io import read_adata, load_model
-from .nn import nn_annotate
+from .instance import nn_annotate
 from .state import GinsengClassifierState
 
 

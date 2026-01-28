@@ -95,17 +95,17 @@ class GinsengDataset:
         label_key : str
             The column name in `adata.obs` containing the target labels
             (e.g., cell type).
-        layer : str, optional
+        layer : str
             The key in `adata.layers` to use for expression counts.
             If None, uses `adata.X` (default : None).
-        genes : str | list of str | np.ndarray, optional
+        genes : str | list of str | np.ndarray
             Gene selection/filtering logic.
             - If a string: Assumes it is a column in `adata.var` containing a
               boolean mask (e.g., "highly_variable").
             - If a list or array: A specific set of gene names to keep. This
               will also reorder the output to match the provided list.
             - If None: Keeps all genes (default : None).
-        group_key : str, optional
+        group_key : str
             The column name in `adata.obs` containing grouping metadata, such
             as "batch" or "donor" (default : None).
         chunk_size : int

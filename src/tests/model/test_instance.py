@@ -11,6 +11,9 @@ from ginseng.model.nn import (
     nn_init_linear,
     nn_linear,
     nn_dropout,
+)
+
+from ginseng.model.instance import (
     nn_normalize,
     nn_annotate_init,
     nn_annotate,

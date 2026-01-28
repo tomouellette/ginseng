@@ -10,7 +10,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from ginseng.data.dataset import GinsengDataset
-from ginseng.model.nn import GinsengClassifier
+from ginseng.model.instance import GinsengClassifier
 from ginseng.model.state import state_from_classifier_trainer
 
 from .augment import augment
@@ -52,17 +52,14 @@ class GinsengClassifierTrainerSettings:
 
 
 class GinsengClassifierTrainer:
-    """
-    Trainer class for orchestrating the training of a GinsengClassifier.
-    """
+    """Trainer for GinsengClassifier."""
 
     def __init__(
         self,
         dataset: GinsengDataset | str | Path,
         settings: GinsengClassifierTrainerSettings = GinsengClassifierTrainerSettings(),
     ):
-        """
-        Initialize the trainer with a dataset and configuration.
+        """Initialize the trainer with a dataset and configuration.
 
         Parameters
         ----------
@@ -117,8 +114,7 @@ class GinsengClassifierTrainer:
         return new_params, new_opt_state, loss
 
     def fit(self, epochs: int = 10, silent: bool = False) -> GinsengClassifier:
-        """
-        Execute the training loop.
+        """Fit the model.
 
         Parameters
         ----------

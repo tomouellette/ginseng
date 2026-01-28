@@ -10,6 +10,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from ginseng.data.dataset import GinsengDataset
+
 from ginseng.train.trainer import (
     GinsengClassifierTrainer,
     GinsengClassifierTrainerSettings,

@@ -47,9 +47,11 @@ Copyright &copy; 2025 Tom W. Ouellette
 # Read more: https://zensical.org/docs/setup/navigation/
 nav = [
   { "Get started" = "index.md" },
-  { "Guides" = [
-    { "Basic usage" = "guides/basic.md" },
-    { "Training a model to annotate new data" = "guides/uterine.md" }
+  { "Usage" = [
+    { "Cell type annotation" = "usage/annotation.md" },
+  ]},
+  { "Tutorials" = [
+    { "Annotating cell types with ginseng" = "tutorials/uterine.md" },
   ]},
   { "API" = "api.md" }
 ]
